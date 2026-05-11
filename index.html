@@ -3,179 +3,426 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>AI Agent Tips</title>
+  <title>AI Agent Tips — Cursor / Claude Code / Codexの運用ノウハウ集</title>
+  <meta name="description" content="日々の作業で見つけた、Cursor / Claude Code / Codex などAIエージェントの便利な設定や工夫をまとめたサイト">
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+JP:wght@400;500;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+
   <style>
     :root {
-      --text: #2a2a2a;
-      --text-muted: #6a6a6a;
-      --bg: #ffffff;
-      --bg-card: #f6f7f8;
-      --border: #e3e5e8;
-      --accent: #3a6ea5;
+      --text-primary: #18181b;
+      --text-secondary: #52525b;
+      --text-tertiary: #a1a1aa;
+      --bg-base: #fafaf9;
+      --bg-elevated: #ffffff;
+      --bg-soft: #f4f4f5;
+      --border-subtle: #e4e4e7;
+      --border-medium: #d4d4d8;
+      --accent: #2563eb;
+      --accent-soft: #dbeafe;
+      --accent-hover: #1d4ed8;
+      --radius-sm: 6px;
+      --radius-md: 10px;
+      --radius-lg: 16px;
+      --shadow-sm: 0 1px 2px rgba(24, 24, 27, 0.04), 0 1px 1px rgba(24, 24, 27, 0.03);
+      --shadow-md: 0 4px 12px rgba(24, 24, 27, 0.04), 0 2px 4px rgba(24, 24, 27, 0.03);
+      --shadow-lg: 0 10px 30px rgba(24, 24, 27, 0.06), 0 4px 10px rgba(24, 24, 27, 0.04);
     }
 
-    * { box-sizing: border-box; }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
 
-    html { font-size: 16px; }
+    html { font-size: 16px; scroll-behavior: smooth; }
 
     body {
-      margin: 0;
-      padding: 0;
-      font-family: -apple-system, "Hiragino Sans", "Yu Gothic", "Meiryo", "Segoe UI", system-ui, sans-serif;
-      color: var(--text);
-      background: var(--bg);
-      line-height: 1.75;
+      font-family: "Inter", "Noto Sans JP", -apple-system, "Hiragino Sans", "Yu Gothic Medium", "Yu Gothic", sans-serif;
+      color: var(--text-primary);
+      background: var(--bg-base);
+      line-height: 1.8;
+      letter-spacing: 0.005em;
       -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+      font-feature-settings: "palt" 1;
     }
 
-    main {
-      max-width: 760px;
+    .site-header {
+      background: var(--bg-elevated);
+      border-bottom: 1px solid var(--border-subtle);
+      padding: 18px 0;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      backdrop-filter: blur(10px);
+      background: rgba(255, 255, 255, 0.85);
+    }
+
+    .site-header-inner {
+      max-width: 1100px;
       margin: 0 auto;
-      padding: 56px 32px 96px;
+      padding: 0 32px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
     }
 
-    header {
-      border-bottom: 1px solid var(--border);
-      padding-bottom: 24px;
+    .logo {
+      font-weight: 700;
+      font-size: 1.05rem;
+      letter-spacing: -0.01em;
+      color: var(--text-primary);
+      text-decoration: none;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .logo-mark {
+      display: inline-block;
+      width: 22px;
+      height: 22px;
+      background: linear-gradient(135deg, #2563eb 0%, #8b5cf6 100%);
+      border-radius: 6px;
+      position: relative;
+    }
+
+    .logo-mark::after {
+      content: "";
+      position: absolute;
+      inset: 5px;
+      background: white;
+      border-radius: 2px;
+    }
+
+    .site-nav a {
+      color: var(--text-secondary);
+      text-decoration: none;
+      font-size: 0.9rem;
+      font-weight: 500;
+      margin-left: 24px;
+      transition: color 0.15s ease;
+    }
+
+    .site-nav a:hover {
+      color: var(--text-primary);
+    }
+
+    .hero {
+      padding: 100px 32px 80px;
+      text-align: center;
+      max-width: 800px;
+      margin: 0 auto;
+      position: relative;
+    }
+
+    .hero::before {
+      content: "";
+      position: absolute;
+      top: 60px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 600px;
+      height: 600px;
+      background: radial-gradient(circle, rgba(37, 99, 235, 0.08) 0%, transparent 70%);
+      z-index: -1;
+      pointer-events: none;
+    }
+
+    .hero-eyebrow {
+      display: inline-block;
+      font-size: 0.78rem;
+      font-weight: 600;
+      letter-spacing: 0.12em;
+      color: var(--accent);
+      background: var(--accent-soft);
+      padding: 6px 14px;
+      border-radius: 999px;
+      margin-bottom: 24px;
+      text-transform: uppercase;
+    }
+
+    .hero-title {
+      font-size: clamp(2rem, 5vw, 3rem);
+      font-weight: 700;
+      letter-spacing: -0.025em;
+      line-height: 1.2;
+      margin-bottom: 24px;
+      color: var(--text-primary);
+    }
+
+    .hero-subtitle {
+      font-size: 1.1rem;
+      color: var(--text-secondary);
+      line-height: 1.7;
+      max-width: 580px;
+      margin: 0 auto;
+    }
+
+    .hero-meta {
+      display: flex;
+      justify-content: center;
+      gap: 24px;
+      margin-top: 36px;
+      flex-wrap: wrap;
+    }
+
+    .hero-meta-item {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 0.85rem;
+      color: var(--text-tertiary);
+    }
+
+    .hero-meta-item strong {
+      color: var(--text-secondary);
+      font-weight: 600;
+    }
+
+    .container {
+      max-width: 880px;
+      margin: 0 auto;
+      padding: 0 32px;
+    }
+
+    .section {
+      padding: 60px 0 80px;
+    }
+
+    .section-title {
+      font-size: 1.5rem;
+      font-weight: 700;
+      letter-spacing: -0.015em;
+      margin-bottom: 8px;
+    }
+
+    .section-description {
+      color: var(--text-secondary);
+      font-size: 0.95rem;
       margin-bottom: 40px;
     }
 
-    h1 {
-      font-size: 1.75rem;
-      margin: 0 0 12px;
-      letter-spacing: 0.01em;
-      line-height: 1.4;
-    }
-
-    .meta {
-      color: var(--text-muted);
-      font-size: 0.875rem;
-      margin: 0;
-    }
-
-    h2 {
-      font-size: 1.25rem;
-      margin: 48px 0 16px;
-      padding-bottom: 8px;
-      border-bottom: 1px solid var(--border);
-    }
-
-    p {
-      margin: 0 0 16px;
-    }
-
-    .lead {
-      font-size: 1.05rem;
-      color: var(--text);
-      margin-bottom: 32px;
-    }
-
-    .tips-list {
-      list-style: none;
-      padding: 0;
-      margin: 0;
-    }
-
-    .tips-list li {
-      margin-bottom: 16px;
+    .tips-grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 20px;
     }
 
     .tip-card {
       display: block;
-      background: var(--bg-card);
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      padding: 20px 24px;
+      background: var(--bg-elevated);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-lg);
+      padding: 32px;
       text-decoration: none;
       color: inherit;
-      transition: border-color 0.15s ease, transform 0.15s ease;
+      transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+      box-shadow: var(--shadow-sm);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .tip-card::before {
+      content: "";
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 3px;
+      background: linear-gradient(90deg, var(--accent) 0%, #8b5cf6 100%);
+      transform: scaleX(0);
+      transform-origin: left;
+      transition: transform 0.3s ease;
     }
 
     .tip-card:hover {
-      border-color: var(--accent);
-      transform: translateY(-1px);
+      transform: translateY(-4px);
+      box-shadow: var(--shadow-lg);
+      border-color: var(--border-medium);
     }
 
-    .tip-title {
-      font-size: 1.05rem;
-      font-weight: 600;
-      margin: 0 0 6px;
-      color: var(--accent);
+    .tip-card:hover::before {
+      transform: scaleX(1);
     }
 
-    .tip-desc {
-      color: var(--text-muted);
-      font-size: 0.92rem;
-      margin: 0;
+    .tip-card:hover .tip-arrow {
+      transform: translateX(4px);
+    }
+
+    .tip-card-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 14px;
+      gap: 16px;
+      flex-wrap: wrap;
     }
 
     .tip-tags {
-      margin-top: 10px;
-      font-size: 0.78rem;
-      color: var(--text-muted);
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
     }
 
     .tip-tag {
-      display: inline-block;
-      background: white;
-      border: 1px solid var(--border);
-      padding: 2px 8px;
-      border-radius: 999px;
-      margin-right: 6px;
+      font-size: 0.72rem;
+      font-weight: 600;
+      letter-spacing: 0.04em;
+      background: var(--bg-soft);
+      color: var(--text-secondary);
+      padding: 3px 10px;
+      border-radius: 4px;
+      text-transform: uppercase;
     }
 
-    footer {
-      margin-top: 80px;
-      padding-top: 24px;
-      border-top: 1px solid var(--border);
-      color: var(--text-muted);
+    .tip-read-time {
+      font-size: 0.78rem;
+      color: var(--text-tertiary);
+      font-weight: 500;
+      white-space: nowrap;
+    }
+
+    .tip-title {
+      font-size: 1.25rem;
+      font-weight: 700;
+      letter-spacing: -0.01em;
+      line-height: 1.4;
+      color: var(--text-primary);
+      margin-bottom: 10px;
+    }
+
+    .tip-desc {
+      color: var(--text-secondary);
+      font-size: 0.95rem;
+      line-height: 1.75;
+      margin-bottom: 20px;
+    }
+
+    .tip-footer {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding-top: 16px;
+      border-top: 1px solid var(--border-subtle);
       font-size: 0.85rem;
     }
 
-    footer a {
+    .tip-date {
+      color: var(--text-tertiary);
+    }
+
+    .tip-link-text {
+      color: var(--accent);
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .tip-arrow {
+      transition: transform 0.2s ease;
+      display: inline-block;
+    }
+
+    .coming-soon {
+      background: var(--bg-soft);
+      border: 1px dashed var(--border-medium);
+      border-radius: var(--radius-lg);
+      padding: 32px;
+      text-align: center;
+      color: var(--text-tertiary);
+    }
+
+    .coming-soon strong {
+      color: var(--text-secondary);
+      display: block;
+      margin-bottom: 6px;
+      font-weight: 600;
+    }
+
+    .site-footer {
+      border-top: 1px solid var(--border-subtle);
+      padding: 40px 32px;
+      text-align: center;
+      color: var(--text-tertiary);
+      font-size: 0.85rem;
+      background: var(--bg-elevated);
+    }
+
+    .site-footer a {
       color: var(--accent);
       text-decoration: none;
     }
 
-    footer a:hover {
+    .site-footer a:hover {
       text-decoration: underline;
     }
 
-    @media (max-width: 600px) {
-      main { padding: 32px 20px 64px; }
-      h1 { font-size: 1.4rem; }
-      h2 { font-size: 1.1rem; }
+    @media (max-width: 640px) {
+      .site-header-inner { padding: 0 20px; }
+      .hero { padding: 60px 20px 50px; }
+      .container { padding: 0 20px; }
+      .tip-card { padding: 24px; }
+      .site-nav a { margin-left: 16px; font-size: 0.85rem; }
     }
   </style>
 </head>
 <body>
-  <main>
-    <header>
-      <h1>AI Agent Tips</h1>
-      <p class="meta">Cursor / Claude Code / Codex などのAIエージェント運用ノウハウ集</p>
-    </header>
+  <header class="site-header">
+    <div class="site-header-inner">
+      <a href="./" class="logo">
+        <span class="logo-mark"></span>
+        AI Agent Tips
+      </a>
+      <nav class="site-nav">
+        <a href="https://github.com/aoyama-webrider/ai-agent-tips" target="_blank" rel="noopener">GitHub</a>
+      </nav>
+    </div>
+  </header>
 
-    <p class="lead">日々の作業で見つけた、ちょっと便利な設定や工夫をまとめています。</p>
+  <section class="hero">
+    <span class="hero-eyebrow">AI Agent Operation Notes</span>
+    <h1 class="hero-title">日々の小さな工夫が、<br>大きな効率を生む。</h1>
+    <p class="hero-subtitle">Cursor / Claude Code / Codex などのAIエージェントを業務で使う中で見つけた、ちょっと便利な設定や工夫の集めどころ。</p>
+    <div class="hero-meta">
+      <span class="hero-meta-item"><strong>1</strong> tip published</span>
+      <span class="hero-meta-item">Last updated <strong>2026-05-11</strong></span>
+    </div>
+  </section>
 
-    <h2>Tips一覧</h2>
+  <main class="container">
+    <section class="section">
+      <h2 class="section-title">Tips</h2>
+      <p class="section-description">運用してみて「これは便利」と思ったものを記事化しています。</p>
 
-    <ul class="tips-list">
-      <li>
+      <div class="tips-grid">
         <a href="timestamp/" class="tip-card">
-          <p class="tip-title">Cursor内のClaude Codeチャットに日時を表示する</p>
-          <p class="tip-desc">標準では出ない各メッセージの送信時刻を、フックとグローバルCLAUDE.mdの組み合わせで返信冒頭に表示する設定方法。</p>
-          <p class="tip-tags">
-            <span class="tip-tag">Claude Code</span>
-            <span class="tip-tag">Hook</span>
-            <span class="tip-tag">UserPromptSubmit</span>
-          </p>
+          <div class="tip-card-header">
+            <div class="tip-tags">
+              <span class="tip-tag">Claude Code</span>
+              <span class="tip-tag">Hook</span>
+              <span class="tip-tag">Cursor</span>
+            </div>
+            <span class="tip-read-time">読了 約6分</span>
+          </div>
+          <h3 class="tip-title">Cursor内のClaude Codeチャットに日時を表示する</h3>
+          <p class="tip-desc">標準では出ない各メッセージの送信時刻を、UserPromptSubmitフックとグローバルCLAUDE.mdの組み合わせで返信冒頭に表示させる設定方法。汎用フックの応用例も。</p>
+          <div class="tip-footer">
+            <span class="tip-date">2026-05-11</span>
+            <span class="tip-link-text">読む <span class="tip-arrow">→</span></span>
+          </div>
         </a>
-      </li>
-    </ul>
 
-    <footer>
-      <p>このサイトのソースは GitHub で管理しています。誤りや改善案があれば issue or pull request まで。</p>
-    </footer>
+        <div class="coming-soon">
+          <strong>More tips coming soon</strong>
+          現在ストック中: Gitブランチ自動通知 / Codex連携 / カスタムスキル設計 / MCP活用パターン
+        </div>
+      </div>
+    </section>
   </main>
+
+  <footer class="site-footer">
+    <p>このサイトのソースは <a href="https://github.com/aoyama-webrider/ai-agent-tips" target="_blank" rel="noopener">GitHub</a> で管理しています。誤りや改善案があれば issue or pull request まで。</p>
+  </footer>
 </body>
 </html>

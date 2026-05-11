@@ -3,276 +3,547 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Cursor＞Claude Code に日時を表示する</title>
+  <title>Cursor内のClaude Codeチャットに日時を表示する — AI Agent Tips</title>
+  <meta name="description" content="標準では出ない各メッセージの送信時刻を、UserPromptSubmitフックとグローバルCLAUDE.mdで返信冒頭に表示させる設定方法">
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+JP:wght@400;500;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+
   <style>
     :root {
-      --text: #2a2a2a;
-      --text-muted: #6a6a6a;
-      --bg: #ffffff;
-      --bg-code: #f6f7f8;
-      --border: #e3e5e8;
-      --accent: #3a6ea5;
-      --warn: #b85c00;
-      --tip: #2e7d32;
+      --text-primary: #18181b;
+      --text-secondary: #52525b;
+      --text-tertiary: #a1a1aa;
+      --bg-base: #fafaf9;
+      --bg-elevated: #ffffff;
+      --bg-soft: #f4f4f5;
+      --bg-code: #1e1e2e;
+      --code-text: #cdd6f4;
+      --border-subtle: #e4e4e7;
+      --border-medium: #d4d4d8;
+      --accent: #2563eb;
+      --accent-soft: #dbeafe;
+      --accent-hover: #1d4ed8;
+      --warn: #d97706;
+      --warn-soft: #fef3c7;
+      --tip: #059669;
+      --tip-soft: #d1fae5;
+      --radius-sm: 6px;
+      --radius-md: 10px;
+      --radius-lg: 16px;
+      --shadow-sm: 0 1px 2px rgba(24, 24, 27, 0.04);
+      --shadow-md: 0 4px 12px rgba(24, 24, 27, 0.05);
     }
 
-    * { box-sizing: border-box; }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
 
-    html { font-size: 16px; }
+    html { font-size: 16px; scroll-behavior: smooth; }
 
     body {
-      margin: 0;
-      padding: 0;
-      font-family: -apple-system, "Hiragino Sans", "Yu Gothic", "Meiryo", "Segoe UI", system-ui, sans-serif;
-      color: var(--text);
-      background: var(--bg);
-      line-height: 1.75;
+      font-family: "Inter", "Noto Sans JP", -apple-system, "Hiragino Sans", "Yu Gothic Medium", "Yu Gothic", sans-serif;
+      color: var(--text-primary);
+      background: var(--bg-base);
+      line-height: 1.85;
+      letter-spacing: 0.005em;
       -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+      font-feature-settings: "palt" 1;
     }
 
-    main {
-      max-width: 760px;
+    .site-header {
+      border-bottom: 1px solid var(--border-subtle);
+      padding: 18px 0;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      background: rgba(255, 255, 255, 0.85);
+      backdrop-filter: blur(10px);
+    }
+
+    .site-header-inner {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 0 32px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .logo {
+      font-weight: 700;
+      font-size: 1.05rem;
+      letter-spacing: -0.01em;
+      color: var(--text-primary);
+      text-decoration: none;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .logo-mark {
+      display: inline-block;
+      width: 22px;
+      height: 22px;
+      background: linear-gradient(135deg, #2563eb 0%, #8b5cf6 100%);
+      border-radius: 6px;
+      position: relative;
+    }
+
+    .logo-mark::after {
+      content: "";
+      position: absolute;
+      inset: 5px;
+      background: white;
+      border-radius: 2px;
+    }
+
+    .site-nav a {
+      color: var(--text-secondary);
+      text-decoration: none;
+      font-size: 0.9rem;
+      font-weight: 500;
+      margin-left: 24px;
+      transition: color 0.15s ease;
+    }
+
+    .site-nav a:hover {
+      color: var(--text-primary);
+    }
+
+    .layout {
+      max-width: 1100px;
       margin: 0 auto;
       padding: 56px 32px 96px;
+      display: grid;
+      grid-template-columns: 1fr 220px;
+      gap: 64px;
+      align-items: start;
     }
 
-    header {
-      border-bottom: 1px solid var(--border);
-      padding-bottom: 24px;
-      margin-bottom: 40px;
+    .article {
+      min-width: 0;
     }
 
-    h1 {
-      font-size: 1.75rem;
-      margin: 0 0 12px;
-      letter-spacing: 0.01em;
-      line-height: 1.4;
+    .breadcrumb {
+      font-size: 0.85rem;
+      color: var(--text-tertiary);
+      margin-bottom: 24px;
     }
 
-    .meta {
-      color: var(--text-muted);
-      font-size: 0.875rem;
-      margin: 0;
+    .breadcrumb a {
+      color: var(--text-tertiary);
+      text-decoration: none;
+      transition: color 0.15s ease;
     }
 
-    h2 {
-      font-size: 1.25rem;
-      margin: 56px 0 16px;
-      padding-bottom: 8px;
-      border-bottom: 1px solid var(--border);
+    .breadcrumb a:hover {
+      color: var(--accent);
     }
 
-    h3 {
-      font-size: 1.05rem;
-      margin: 32px 0 12px;
+    .breadcrumb-sep {
+      margin: 0 8px;
+      color: var(--border-medium);
     }
 
-    p {
-      margin: 0 0 16px;
+    .article-header {
+      margin-bottom: 48px;
+      padding-bottom: 32px;
+      border-bottom: 1px solid var(--border-subtle);
     }
 
-    ul, ol {
-      margin: 0 0 16px;
+    .article-tags {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+      margin-bottom: 20px;
+    }
+
+    .article-tag {
+      font-size: 0.72rem;
+      font-weight: 600;
+      letter-spacing: 0.04em;
+      background: var(--accent-soft);
+      color: var(--accent);
+      padding: 3px 10px;
+      border-radius: 4px;
+      text-transform: uppercase;
+    }
+
+    .article-title {
+      font-size: clamp(1.75rem, 4vw, 2.5rem);
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      line-height: 1.25;
+      color: var(--text-primary);
+      margin-bottom: 20px;
+    }
+
+    .article-meta {
+      display: flex;
+      gap: 24px;
+      flex-wrap: wrap;
+      font-size: 0.88rem;
+      color: var(--text-tertiary);
+    }
+
+    .article-meta-item {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .article-content h2 {
+      font-size: 1.5rem;
+      font-weight: 700;
+      letter-spacing: -0.015em;
+      margin: 56px 0 20px;
+      padding-top: 8px;
+      color: var(--text-primary);
+      scroll-margin-top: 80px;
+    }
+
+    .article-content h3 {
+      font-size: 1.15rem;
+      font-weight: 600;
+      margin: 36px 0 14px;
+      letter-spacing: -0.01em;
+      color: var(--text-primary);
+      scroll-margin-top: 80px;
+    }
+
+    .article-content p {
+      margin-bottom: 18px;
+      color: var(--text-primary);
+    }
+
+    .article-content ul, .article-content ol {
+      margin: 0 0 20px;
       padding-left: 1.5em;
     }
 
-    li {
-      margin-bottom: 6px;
+    .article-content li {
+      margin-bottom: 8px;
+      color: var(--text-primary);
     }
 
-    code {
-      font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
-      font-size: 0.9em;
-      background: var(--bg-code);
-      padding: 2px 6px;
-      border-radius: 3px;
+    .article-content strong {
+      font-weight: 700;
+      color: var(--text-primary);
     }
 
-    pre {
+    .article-content code {
+      font-family: "JetBrains Mono", "SFMono-Regular", Consolas, monospace;
+      font-size: 0.88em;
+      background: var(--bg-soft);
+      color: var(--text-primary);
+      padding: 2px 7px;
+      border-radius: 4px;
+      border: 1px solid var(--border-subtle);
+    }
+
+    .article-content pre {
       background: var(--bg-code);
-      border: 1px solid var(--border);
-      border-radius: 6px;
-      padding: 16px 18px;
+      color: var(--code-text);
+      border-radius: var(--radius-md);
+      padding: 20px 24px;
       overflow-x: auto;
-      margin: 16px 0 20px;
-      font-size: 0.875rem;
-      line-height: 1.6;
+      margin: 20px 0 24px;
+      font-size: 0.86rem;
+      line-height: 1.7;
+      box-shadow: var(--shadow-md);
+      position: relative;
     }
 
-    pre code {
+    .article-content pre code {
       background: none;
+      color: inherit;
       padding: 0;
       font-size: inherit;
+      border: none;
+      font-family: "JetBrains Mono", "SFMono-Regular", Consolas, monospace;
+    }
+
+    .callout {
+      background: var(--bg-elevated);
+      border: 1px solid var(--border-subtle);
+      border-left: 3px solid var(--accent);
+      border-radius: var(--radius-md);
+      padding: 18px 22px;
+      margin: 24px 0;
+      box-shadow: var(--shadow-sm);
+    }
+
+    .callout-warn {
+      border-left-color: var(--warn);
+      background: linear-gradient(to right, var(--warn-soft), var(--bg-elevated));
+    }
+
+    .callout-tip {
+      border-left-color: var(--tip);
+      background: linear-gradient(to right, var(--tip-soft), var(--bg-elevated));
+    }
+
+    .callout-title {
+      font-weight: 700;
+      font-size: 0.85rem;
+      letter-spacing: 0.02em;
+      text-transform: uppercase;
+      margin: 0 0 8px;
+      color: var(--accent);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .callout-warn .callout-title { color: var(--warn); }
+    .callout-tip .callout-title { color: var(--tip); }
+
+    .callout p:last-child { margin-bottom: 0; }
+
+    .step {
+      background: var(--bg-elevated);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-lg);
+      padding: 28px 32px;
+      margin: 24px 0;
+      box-shadow: var(--shadow-sm);
+    }
+
+    .step-header {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      margin-bottom: 16px;
+    }
+
+    .step-num {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 32px;
+      height: 32px;
+      background: linear-gradient(135deg, #2563eb 0%, #8b5cf6 100%);
+      color: white;
+      border-radius: 50%;
+      font-size: 0.85rem;
+      font-weight: 700;
+      flex-shrink: 0;
+    }
+
+    .step-title {
+      font-size: 1.15rem;
+      font-weight: 600;
+      letter-spacing: -0.01em;
+      margin: 0;
+    }
+
+    .diagram {
+      background: var(--bg-elevated);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-md);
+      padding: 24px 28px;
+      font-family: "JetBrains Mono", monospace;
+      font-size: 0.82rem;
+      line-height: 1.7;
+      white-space: pre;
+      overflow-x: auto;
+      margin: 24px 0;
+      color: var(--text-secondary);
+      box-shadow: var(--shadow-sm);
     }
 
     table {
       width: 100%;
       border-collapse: collapse;
-      margin: 16px 0 24px;
-      font-size: 0.95rem;
+      margin: 20px 0 28px;
+      font-size: 0.92rem;
+      background: var(--bg-elevated);
+      border-radius: var(--radius-md);
+      overflow: hidden;
+      box-shadow: var(--shadow-sm);
     }
 
     th, td {
-      padding: 10px 12px;
+      padding: 12px 16px;
       text-align: left;
-      border-bottom: 1px solid var(--border);
+      border-bottom: 1px solid var(--border-subtle);
       vertical-align: top;
     }
 
     th {
-      background: var(--bg-code);
+      background: var(--bg-soft);
       font-weight: 600;
+      font-size: 0.85rem;
+      color: var(--text-secondary);
+      letter-spacing: 0.02em;
     }
 
-    .callout {
-      border-left: 3px solid var(--border);
-      background: var(--bg-code);
-      padding: 14px 16px;
-      margin: 20px 0;
-      border-radius: 0 4px 4px 0;
+    tr:last-child td {
+      border-bottom: none;
     }
 
-    .callout-warn {
-      border-left-color: var(--warn);
-    }
-
-    .callout-tip {
-      border-left-color: var(--tip);
-    }
-
-    .callout-title {
-      font-weight: 600;
-      margin: 0 0 6px;
-      font-size: 0.9rem;
-    }
-
-    .callout-warn .callout-title {
-      color: var(--warn);
-    }
-
-    .callout-tip .callout-title {
-      color: var(--tip);
-    }
-
-    .callout p:last-child {
-      margin-bottom: 0;
-    }
-
-    .step {
-      counter-reset: none;
-    }
-
-    .step h3 {
-      display: flex;
-      align-items: baseline;
-      gap: 10px;
-    }
-
-    .step-num {
-      display: inline-block;
-      background: var(--text);
-      color: white;
-      font-size: 0.8rem;
-      padding: 2px 9px;
-      border-radius: 999px;
-      font-weight: 600;
-      letter-spacing: 0.04em;
-    }
-
-    .toc {
-      background: var(--bg-code);
-      border-radius: 6px;
-      padding: 20px 24px;
-      margin: 0 0 40px;
-      font-size: 0.95rem;
+    .toc-sidebar {
+      position: sticky;
+      top: 100px;
+      align-self: start;
     }
 
     .toc-title {
-      font-weight: 600;
-      margin: 0 0 8px;
+      font-size: 0.75rem;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--text-tertiary);
+      margin-bottom: 14px;
     }
 
-    .toc ol {
+    .toc-list {
+      list-style: none;
+      padding: 0;
       margin: 0;
-      padding-left: 1.4em;
     }
 
-    .toc a {
+    .toc-list li {
+      margin-bottom: 4px;
+    }
+
+    .toc-list a {
+      display: block;
+      color: var(--text-secondary);
+      text-decoration: none;
+      font-size: 0.875rem;
+      padding: 6px 0 6px 12px;
+      border-left: 2px solid var(--border-subtle);
+      transition: all 0.15s ease;
+      line-height: 1.5;
+    }
+
+    .toc-list a:hover {
+      color: var(--accent);
+      border-left-color: var(--accent);
+    }
+
+    .article-footer {
+      margin-top: 80px;
+      padding-top: 32px;
+      border-top: 1px solid var(--border-subtle);
+    }
+
+    .back-link {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      color: var(--accent);
+      text-decoration: none;
+      font-weight: 600;
+      font-size: 0.95rem;
+      padding: 10px 16px;
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-md);
+      background: var(--bg-elevated);
+      transition: all 0.15s ease;
+    }
+
+    .back-link:hover {
+      background: var(--accent-soft);
+      border-color: var(--accent);
+    }
+
+    .site-footer {
+      border-top: 1px solid var(--border-subtle);
+      padding: 40px 32px;
+      text-align: center;
+      color: var(--text-tertiary);
+      font-size: 0.85rem;
+      background: var(--bg-elevated);
+    }
+
+    .site-footer a {
       color: var(--accent);
       text-decoration: none;
     }
 
-    .toc a:hover {
-      text-decoration: underline;
+    @media (max-width: 960px) {
+      .layout {
+        grid-template-columns: 1fr;
+        gap: 0;
+        padding: 40px 24px 64px;
+      }
+      .toc-sidebar {
+        position: static;
+        order: -1;
+        padding: 18px 20px;
+        background: var(--bg-elevated);
+        border: 1px solid var(--border-subtle);
+        border-radius: var(--radius-md);
+        margin-bottom: 32px;
+      }
+      .toc-list a {
+        font-size: 0.85rem;
+      }
     }
 
-    .diagram {
-      background: var(--bg-code);
-      border: 1px solid var(--border);
-      border-radius: 6px;
-      padding: 20px 24px;
-      font-family: "SFMono-Regular", Consolas, monospace;
-      font-size: 0.85rem;
-      line-height: 1.5;
-      white-space: pre;
-      overflow-x: auto;
-      margin: 16px 0 24px;
-      color: var(--text);
-    }
-
-    footer {
-      margin-top: 80px;
-      padding-top: 24px;
-      border-top: 1px solid var(--border);
-      color: var(--text-muted);
-      font-size: 0.85rem;
-    }
-
-    @media (max-width: 600px) {
-      main { padding: 32px 20px 64px; }
-      h1 { font-size: 1.4rem; }
-      h2 { font-size: 1.1rem; }
-    }
-
-    @media print {
-      body { background: white; }
-      pre, .callout, .toc, .diagram { background: #f9f9f9; }
-      a { color: var(--text); text-decoration: none; }
+    @media (max-width: 640px) {
+      .site-header-inner { padding: 0 20px; }
+      .step { padding: 20px 22px; }
+      .article-content pre { padding: 16px 18px; font-size: 0.8rem; }
+      .article-content h2 { font-size: 1.3rem; margin-top: 40px; }
+      .article-content h3 { font-size: 1.05rem; }
     }
   </style>
 </head>
 <body>
-  <main>
-    <header>
-      <h1>Cursor &gt; Claude Code のチャットに日時を表示する</h1>
-      <p class="meta">作成: 2026-05-11 / 対象: Claude Codeを日常的に使っている人</p>
-    </header>
+  <header class="site-header">
+    <div class="site-header-inner">
+      <a href="../" class="logo">
+        <span class="logo-mark"></span>
+        AI Agent Tips
+      </a>
+      <nav class="site-nav">
+        <a href="https://github.com/aoyama-webrider/ai-agent-tips" target="_blank" rel="noopener">GitHub</a>
+      </nav>
+    </div>
+  </header>
 
-    <nav class="toc">
-      <p class="toc-title">目次</p>
-      <ol>
-        <li><a href="#problem">なぜ日時表示が必要なのか</a></li>
-        <li><a href="#mechanism">仕組み（2層構造）</a></li>
-        <li><a href="#setup">セットアップ手順</a></li>
-        <li><a href="#faq">よくある疑問・注意点</a></li>
-        <li><a href="#applications">UserPromptSubmitフックの汎用活用例</a></li>
-      </ol>
-    </nav>
+  <div class="layout">
+    <article class="article">
+      <p class="breadcrumb">
+        <a href="../">Tips一覧</a>
+        <span class="breadcrumb-sep">/</span>
+        <span>日時表示</span>
+      </p>
 
-    <section id="problem">
-      <h2>1. なぜ日時表示が必要なのか</h2>
+      <header class="article-header">
+        <div class="article-tags">
+          <span class="article-tag">Claude Code</span>
+          <span class="article-tag">Hook</span>
+          <span class="article-tag">UserPromptSubmit</span>
+          <span class="article-tag">Cursor</span>
+        </div>
+        <h1 class="article-title">Cursor内のClaude Codeチャットに日時を表示する</h1>
+        <div class="article-meta">
+          <span class="article-meta-item">2026-05-11</span>
+          <span class="article-meta-item">読了 約6分</span>
+          <span class="article-meta-item">Claude Codeをすでに使っている人向け</span>
+        </div>
+      </header>
 
-      <p>Cursor内のClaude Codeチャットでは、各メッセージの送信時刻が画面に出ません。少し前のやり取りを遡るときに <strong>「これいつの会話だっけ？」</strong> が分からず、作業の経過や時系列が把握しづらくなります。</p>
+      <div class="article-content">
+        <section id="problem">
+          <h2>なぜ日時表示が必要なのか</h2>
 
-      <p>Claude Code本体には <code>showMessageTimestamps</code> という設定がありますが、Cursor拡張機能のチャットUIはこの設定を読みません（CursorがUIを独自に描画しているため）。なので設定を <code>true</code> にしても効きません。</p>
+          <p>Cursor内のClaude Codeチャットでは、各メッセージの送信時刻が画面に出ません。少し前のやり取りを遡るときに <strong>「これいつの会話だっけ？」</strong> が分からず、作業の経過や時系列が把握しづらくなります。</p>
 
-      <p>そこで「<strong>Claudeに毎回時刻を伝えて、返信の冒頭に文字として書いてもらう</strong>」運用にします。UI実装に依存せず、チャット履歴に時刻が確実に残ります。</p>
-    </section>
+          <p>Claude Code本体には <code>showMessageTimestamps</code> という設定がありますが、Cursor拡張機能のチャットUIはこの設定を読みません（CursorがUIを独自に描画しているため）。なので設定を <code>true</code> にしても効きません。</p>
 
-    <section id="mechanism">
-      <h2>2. 仕組み（2層構造）</h2>
+          <p>そこで「<strong>Claudeに毎回時刻を伝えて、返信の冒頭に文字として書いてもらう</strong>」運用にします。UI実装に依存せず、チャット履歴に時刻が確実に残ります。</p>
+        </section>
 
-      <div class="diagram">[ユーザーがメッセージ送信]
+        <section id="mechanism">
+          <h2>仕組み（2層構造）</h2>
+
+          <div class="diagram">[ユーザーがメッセージ送信]
         ↓
 [Hook層] PowerShellでGet-Date実行
         ↓ JSON形式でClaudeのコンテキストに注入
@@ -282,26 +553,29 @@
         ↓
 [チャット履歴に文字として日時が残る]</div>
 
-      <h3>層1: フック（時刻を毎メッセージ注入）</h3>
-      <p>Claude Codeの <code>UserPromptSubmit</code> フックを使い、ユーザーがメッセージを送信するたびに、現在のシステム時刻をPowerShellで取得してClaudeのコンテキストに渡します。</p>
+          <h3>層1: フック（時刻を毎メッセージ注入）</h3>
+          <p>Claude Codeの <code>UserPromptSubmit</code> フックを使い、ユーザーがメッセージを送信するたびに、現在のシステム時刻をPowerShellで取得してClaudeのコンテキストに渡します。</p>
 
-      <h3>層2: ルール（返信冒頭に出力させる）</h3>
-      <p>グローバル <code>CLAUDE.md</code> に「返信冒頭に日時を書く」というルールを記述し、Claudeに守らせます。これにより、どのワークスペースで開いたセッションでも同じ挙動になります。</p>
-    </section>
+          <h3>層2: ルール（返信冒頭に出力させる）</h3>
+          <p>グローバル <code>CLAUDE.md</code> に「返信冒頭に日時を書く」というルールを記述し、Claudeに守らせます。これにより、どのワークスペースで開いたセッションでも同じ挙動になります。</p>
+        </section>
 
-    <section id="setup">
-      <h2>3. セットアップ手順</h2>
+        <section id="setup">
+          <h2>セットアップ手順</h2>
 
-      <p>所要時間: 5〜10分。Windows環境（PowerShell）を前提に書いています。Mac/Linuxの場合は <a href="#faq">注意点セクション</a> を参照してください。</p>
+          <p>所要時間: 5〜10分。Windows環境（PowerShell）を前提に書いています。Mac/Linuxの場合は <a href="#faq">注意点セクション</a> を参照してください。</p>
 
-      <div class="step">
-        <h3><span class="step-num">1</span>settings.json にフックを追加</h3>
+          <div class="step">
+            <div class="step-header">
+              <span class="step-num">1</span>
+              <h3 class="step-title">settings.json にフックを追加</h3>
+            </div>
 
-        <p>ファイル: <code>C:\Users\&lt;ユーザー名&gt;\.claude\settings.json</code></p>
+            <p>ファイル: <code>C:\Users\&lt;ユーザー名&gt;\.claude\settings.json</code></p>
 
-        <p><code>hooks</code> オブジェクトの中に、以下のブロックを追加します。<code>hooks</code> キーが既に存在する場合は中に追記、なければ新規作成してください。</p>
+            <p><code>hooks</code> オブジェクトの中に、以下のブロックを追加します。<code>hooks</code> キーが既に存在する場合は中に追記、なければ新規作成してください。</p>
 
-        <pre><code>{
+            <pre><code>{
   "hooks": {
     "UserPromptSubmit": [
       {
@@ -317,194 +591,220 @@
   }
 }</code></pre>
 
-        <div class="callout callout-warn">
-          <p class="callout-title">ポイント</p>
-          <p><code>[Console]::OutputEncoding = [System.Text.Encoding]::UTF8;</code> がないと日本語が文字化けします。PowerShellのデフォルト出力エンコーディングがShift-JISのため、ここでUTF-8に切り替える必要があります。</p>
-        </div>
-      </div>
+            <div class="callout callout-warn">
+              <p class="callout-title">Encoding注意</p>
+              <p><code>[Console]::OutputEncoding = [System.Text.Encoding]::UTF8;</code> がないと日本語が文字化けします。PowerShellのデフォルト出力エンコーディングがShift-JISのため、ここでUTF-8に切り替える必要があります。</p>
+            </div>
+          </div>
 
-      <div class="step">
-        <h3><span class="step-num">2</span>設定を反映する</h3>
+          <div class="step">
+            <div class="step-header">
+              <span class="step-num">2</span>
+              <h3 class="step-title">設定を反映する</h3>
+            </div>
 
-        <p>以下のいずれかでフックを読み込ませます：</p>
-        <ul>
-          <li>Claude Codeのチャット内で <code>/hooks</code> を一度開いて閉じる（設定が再読み込みされる）</li>
-          <li>Claude Codeを再起動する</li>
-        </ul>
-      </div>
+            <p>以下のいずれかでフックを読み込ませます：</p>
+            <ul>
+              <li>Claude Codeのチャット内で <code>/hooks</code> を一度開いて閉じる（設定が再読み込みされる）</li>
+              <li>Claude Codeを再起動する</li>
+            </ul>
+          </div>
 
-      <div class="step">
-        <h3><span class="step-num">3</span>グローバルCLAUDE.mdにルールを追加</h3>
+          <div class="step">
+            <div class="step-header">
+              <span class="step-num">3</span>
+              <h3 class="step-title">グローバルCLAUDE.mdにルールを追加</h3>
+            </div>
 
-        <p>ファイル: <code>C:\Users\&lt;ユーザー名&gt;\.claude\CLAUDE.md</code></p>
+            <p>ファイル: <code>C:\Users\&lt;ユーザー名&gt;\.claude\CLAUDE.md</code></p>
 
-        <p>このファイルは全プロジェクトで読み込まれるグローバルな指示書です。以下のセクションを追加します：</p>
+            <p>このファイルは全プロジェクトで読み込まれるグローバルな指示書です。以下のセクションを追加します：</p>
 
-        <pre><code>## 返信フォーマット
+            <pre><code>## 返信フォーマット
 - 各返信の冒頭に、現在の日時を `YYYY-MM-DD HH:mm (曜日略)` 形式で1行記載する（例: `2026-05-11 15:06 (月)`）
 - 装飾記号や絵文字は付けず、テキストのみのシンプルな表記にする
 - 日時は UserPromptSubmit フックで毎メッセージ注入される「現在の日時: ...」を参照する
 - ツール呼び出しのみで終わるターン（テキスト出力がないターン）はスキップしてよい
 - ユーザーから「時刻表示やめて」と言われたら停止する</code></pre>
 
-        <div class="callout callout-tip">
-          <p class="callout-title">なぜグローバルCLAUDE.md？</p>
-          <p>プロジェクト別の <code>CLAUDE.md</code> や記憶ファイル（メモリ）に書くと、そのフォルダで開いたセッションでしか効きません。複数フォルダで使いたい場合は <strong>必ずグローバルCLAUDE.md に書く</strong> ようにしてください。</p>
-        </div>
-      </div>
+            <div class="callout callout-tip">
+              <p class="callout-title">グローバルCLAUDE.mdが効くわけ</p>
+              <p>プロジェクト別の <code>CLAUDE.md</code> や記憶ファイル（メモリ）に書くと、そのフォルダで開いたセッションでしか効きません。複数フォルダで使いたい場合は <strong>必ずグローバルCLAUDE.md に書く</strong> ようにしてください。</p>
+            </div>
+          </div>
 
-      <div class="step">
-        <h3><span class="step-num">4</span>動作確認</h3>
+          <div class="step">
+            <div class="step-header">
+              <span class="step-num">4</span>
+              <h3 class="step-title">動作確認</h3>
+            </div>
 
-        <p>Claude Codeに何かメッセージを送ってみてください。返信が次のように始まれば成功です：</p>
+            <p>Claude Codeに何かメッセージを送ってみてください。返信が次のように始まれば成功です：</p>
 
-        <pre><code>2026-05-11 15:06 (月)
+            <pre><code>2026-05-11 15:06 (月)
 
 （ここから返信本文）</code></pre>
 
-        <p>日時が出ない場合は次の項目をチェック：</p>
-        <ul>
-          <li>settings.json のJSON構文が壊れていないか（カンマの抜けに注意）</li>
-          <li>フックがロードされているか（<code>/hooks</code> を開いて確認できる）</li>
-          <li>グローバルCLAUDE.md が正しい場所にあるか</li>
-          <li>セッションを再起動したか</li>
-        </ul>
-      </div>
-    </section>
+            <p>日時が出ない場合は次の項目をチェック：</p>
+            <ul>
+              <li>settings.json のJSON構文が壊れていないか（カンマの抜けに注意）</li>
+              <li>フックがロードされているか（<code>/hooks</code> を開いて確認できる）</li>
+              <li>グローバルCLAUDE.md が正しい場所にあるか</li>
+              <li>セッションを再起動したか</li>
+            </ul>
+          </div>
+        </section>
 
-    <section id="faq">
-      <h2>4. よくある疑問・注意点</h2>
+        <section id="faq">
+          <h2>よくある疑問・注意点</h2>
 
-      <h3>Mac / Linux の場合</h3>
-      <p>PowerShellの代わりにシェルコマンドでフックを書きます。<code>command</code> の中身をたとえば以下のように差し替えてください：</p>
-      <pre><code>"command": "echo \"{\\\"hookSpecificOutput\\\":{\\\"hookEventName\\\":\\\"UserPromptSubmit\\\",\\\"additionalContext\\\":\\\"現在の日時: $(date '+%Y-%m-%d %H:%M:%S (%a)')\\\"}}\""</code></pre>
+          <h3>Mac / Linux の場合</h3>
+          <p>PowerShellの代わりにシェルコマンドでフックを書きます。<code>command</code> の中身をたとえば以下のように差し替えてください：</p>
+          <pre><code>"command": "echo \"{\\\"hookSpecificOutput\\\":{\\\"hookEventName\\\":\\\"UserPromptSubmit\\\",\\\"additionalContext\\\":\\\"現在の日時: $(date '+%Y-%m-%d %H:%M:%S (%a)')\\\"}}\""</code></pre>
 
-      <h3>表示をやめたいとき</h3>
-      <ul>
-        <li>一時的にやめるだけなら、Claudeに「時刻表示やめて」と伝える</li>
-        <li>完全にオフにするには <code>settings.json</code> の <code>UserPromptSubmit</code> フックを削除＋グローバル <code>CLAUDE.md</code> の該当セクションを削除</li>
-      </ul>
+          <h3>表示をやめたいとき</h3>
+          <ul>
+            <li>一時的にやめるだけなら、Claudeに「時刻表示やめて」と伝える</li>
+            <li>完全にオフにするには <code>settings.json</code> の <code>UserPromptSubmit</code> フックを削除＋グローバル <code>CLAUDE.md</code> の該当セクションを削除</li>
+          </ul>
 
-      <h3>秒単位まで表示したい場合</h3>
-      <p>CLAUDE.md のフォーマット指定を <code>YYYY-MM-DD HH:mm:ss (曜日)</code> に変えるだけです。フック側は元から秒まで取得しています。</p>
+          <h3>秒単位まで表示したい場合</h3>
+          <p>CLAUDE.md のフォーマット指定を <code>YYYY-MM-DD HH:mm:ss (曜日)</code> に変えるだけです。フック側は元から秒まで取得しています。</p>
 
-      <h3>タイムゾーン</h3>
-      <p>PCのローカル時刻が使われます。海外出張や時差のある作業環境では <code>Get-Date</code> がローカル時刻を返すので、JSTを明示したい場合はフォーマットに <code>K</code>（タイムゾーンオフセット）を追加します。</p>
+          <h3>タイムゾーン</h3>
+          <p>PCのローカル時刻が使われます。海外出張や時差のある作業環境では <code>Get-Date</code> がローカル時刻を返すので、JSTを明示したい場合はフォーマットに <code>K</code>（タイムゾーンオフセット）を追加します。</p>
 
-      <h3>Cursor内蔵AI（Composer/Chat）には効かない</h3>
-      <p>このフックはClaude Codeプラグイン専用です。Cursor内蔵のAI機能（Cmd+K、Composer、Chat）はAnthropicとは別のAPI経路で動いているため、この設定の影響を受けません。</p>
+          <h3>Cursor内蔵AI（Composer/Chat）には効かない</h3>
+          <p>このフックはClaude Codeプラグイン専用です。Cursor内蔵のAI機能（Cmd+K、Composer、Chat）はAnthropicとは別のAPI経路で動いているため、この設定の影響を受けません。</p>
 
-      <h3>ワークスペース別の記憶（メモリ）と併用するとき</h3>
-      <p>記憶ファイル（<code>~/.claude/projects/&lt;sanitized-cwd&gt;/memory/</code>）に同じルールを書いても効きますが、ワークスペース単位の効力範囲なので注意。<strong>全セッション共通にしたいルールはグローバルCLAUDE.mdへ</strong> が原則です。</p>
-    </section>
+          <h3>ワークスペース別の記憶（メモリ）と併用するとき</h3>
+          <p>記憶ファイル（<code>~/.claude/projects/&lt;sanitized-cwd&gt;/memory/</code>）に同じルールを書いても効きますが、ワークスペース単位の効力範囲なので注意。<strong>全セッション共通にしたいルールはグローバルCLAUDE.mdへ</strong> が原則です。</p>
+        </section>
 
-    <section id="applications">
-      <h2>5. UserPromptSubmitフックの汎用活用例</h2>
+        <section id="applications">
+          <h2>UserPromptSubmitフックの汎用活用例</h2>
 
-      <p>このフックは「ユーザーがメッセージを送るたびに、Claudeに渡すコンテキストを動的に追加できる窓口」として汎用的に使えます。日時表示はその一例にすぎません。</p>
+          <p>このフックは「ユーザーがメッセージを送るたびに、Claudeに渡すコンテキストを動的に追加できる窓口」として汎用的に使えます。日時表示はその一例にすぎません。</p>
 
-      <h3>応用アイディア</h3>
+          <h3>応用アイディア</h3>
 
-      <table>
-        <thead>
-          <tr>
-            <th>注入する情報</th>
-            <th>使いどころ</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr>
-            <td>現在のGitブランチ名</td>
-            <td>「いまどのブランチで作業しているか」をClaudeが自動把握。ブランチ切り替え時の混乱を防げる</td>
-          </tr>
-          <tr>
-            <td>カレンダーの次の予定までの時間</td>
-            <td>「あと20分でMTGなので、簡潔に」とClaude側が配慮できる</td>
-          </tr>
-          <tr>
-            <td>バッテリー残量</td>
-            <td>ノートPCの外出作業時。残量少ないと手短にまとめてくれる</td>
-          </tr>
-          <tr>
-            <td>未読Slack件数</td>
-            <td>割り込み状況の把握。集中作業中なら通知をミュート、など</td>
-          </tr>
-          <tr>
-            <td>天気・気温</td>
-            <td>外出予定の判断、雑談の話題</td>
-          </tr>
-          <tr>
-            <td>直近の作業ログ要約</td>
-            <td>長時間セッションで「さっきまで何やってたっけ」を防ぐ</td>
-          </tr>
-        </tbody>
-      </table>
+          <table>
+            <thead>
+              <tr>
+                <th>注入する情報</th>
+                <th>使いどころ</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>現在のGitブランチ名</td>
+                <td>「いまどのブランチで作業しているか」をClaudeが自動把握。ブランチ切り替え時の混乱を防げる</td>
+              </tr>
+              <tr>
+                <td>カレンダーの次の予定までの時間</td>
+                <td>「あと20分でMTGなので、簡潔に」とClaude側が配慮できる</td>
+              </tr>
+              <tr>
+                <td>バッテリー残量</td>
+                <td>ノートPCの外出作業時。残量少ないと手短にまとめてくれる</td>
+              </tr>
+              <tr>
+                <td>未読Slack件数</td>
+                <td>割り込み状況の把握。集中作業中なら通知をミュート、など</td>
+              </tr>
+              <tr>
+                <td>天気・気温</td>
+                <td>外出予定の判断、雑談の話題</td>
+              </tr>
+              <tr>
+                <td>直近の作業ログ要約</td>
+                <td>長時間セッションで「さっきまで何やってたっけ」を防ぐ</td>
+              </tr>
+            </tbody>
+          </table>
 
-      <h3>実装パターン</h3>
+          <h3>実装パターン</h3>
 
-      <p>例えばGitブランチを注入する場合：</p>
+          <p>例えばGitブランチを注入する場合：</p>
 
-      <pre><code>"command": "powershell.exe -NoProfile -Command \"[Console]::OutputEncoding = [System.Text.Encoding]::UTF8; $branch = (git branch --show-current 2&gt;$null); if (-not $branch) { $branch = 'no-git' }; @{hookSpecificOutput=@{hookEventName='UserPromptSubmit';additionalContext=('現在のブランチ: ' + $branch)}} | ConvertTo-Json -Compress\""</code></pre>
+          <pre><code>"command": "powershell.exe -NoProfile -Command \"[Console]::OutputEncoding = [System.Text.Encoding]::UTF8; $branch = (git branch --show-current 2&gt;$null); if (-not $branch) { $branch = 'no-git' }; @{hookSpecificOutput=@{hookEventName='UserPromptSubmit';additionalContext=('現在のブランチ: ' + $branch)}} | ConvertTo-Json -Compress\""</code></pre>
 
-      <h3>複数の情報を1つのフックでまとめて渡す</h3>
+          <h3>複数の情報を1つのフックでまとめて渡す</h3>
 
-      <p>フックを複数登録する代わりに、1つのフック内で複数の情報をまとめて <code>additionalContext</code> に入れる書き方が推奨です。フックが多いとセッション起動・各メッセージごとに余分なプロセスが立ち上がるため。</p>
+          <p>フックを複数登録する代わりに、1つのフック内で複数の情報をまとめて <code>additionalContext</code> に入れる書き方が推奨です。フックが多いとセッション起動・各メッセージごとに余分なプロセスが立ち上がるため。</p>
 
-      <pre><code>$dt = Get-Date -Format 'yyyy-MM-dd HH:mm (dddd)'
+          <pre><code>$dt = Get-Date -Format 'yyyy-MM-dd HH:mm (dddd)'
 $branch = (git branch --show-current 2&gt;$null)
 $ctx = "現在の日時: $dt`n現在のブランチ: $branch"
 @{hookSpecificOutput=@{hookEventName='UserPromptSubmit';additionalContext=$ctx}} | ConvertTo-Json -Compress</code></pre>
 
-      <h3>他のフックイベント</h3>
+          <h3>他のフックイベント</h3>
 
-      <p><code>UserPromptSubmit</code> 以外にも、Claude Codeにはさまざまなフックイベントがあります：</p>
+          <p><code>UserPromptSubmit</code> 以外にも、Claude Codeにはさまざまなフックイベントがあります：</p>
 
-      <table>
-        <thead>
-          <tr>
-            <th>イベント</th>
-            <th>発火タイミング</th>
-            <th>用途例</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr>
-            <td><code>PreToolUse</code></td>
-            <td>ツール実行前</td>
-            <td>危険コマンドをブロック、ログ記録</td>
-          </tr>
-          <tr>
-            <td><code>PostToolUse</code></td>
-            <td>ツール実行後</td>
-            <td>編集後にフォーマッタ自動実行、テスト走らせる</td>
-          </tr>
-          <tr>
-            <td><code>Stop</code></td>
-            <td>Claudeが返答完了したとき</td>
-            <td>音を鳴らす、Slackに通知</td>
-          </tr>
-          <tr>
-            <td><code>SessionStart</code></td>
-            <td>セッション開始時</td>
-            <td>初期コンテキスト注入、環境チェック</td>
-          </tr>
-          <tr>
-            <td><code>PermissionRequest</code></td>
-            <td>権限要求時</td>
-            <td>音を鳴らして気付かせる</td>
-          </tr>
-        </tbody>
-      </table>
+          <table>
+            <thead>
+              <tr>
+                <th>イベント</th>
+                <th>発火タイミング</th>
+                <th>用途例</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><code>PreToolUse</code></td>
+                <td>ツール実行前</td>
+                <td>危険コマンドをブロック、ログ記録</td>
+              </tr>
+              <tr>
+                <td><code>PostToolUse</code></td>
+                <td>ツール実行後</td>
+                <td>編集後にフォーマッタ自動実行、テスト走らせる</td>
+              </tr>
+              <tr>
+                <td><code>Stop</code></td>
+                <td>Claudeが返答完了したとき</td>
+                <td>音を鳴らす、Slackに通知</td>
+              </tr>
+              <tr>
+                <td><code>SessionStart</code></td>
+                <td>セッション開始時</td>
+                <td>初期コンテキスト注入、環境チェック</td>
+              </tr>
+              <tr>
+                <td><code>PermissionRequest</code></td>
+                <td>権限要求時</td>
+                <td>音を鳴らして気付かせる</td>
+              </tr>
+            </tbody>
+          </table>
 
-      <div class="callout callout-warn">
-        <p class="callout-title">運用上の注意</p>
-        <p>フックは <strong>毎メッセージ／毎ツール実行ごと</strong> に走るので、重い処理を書くと体感速度が落ちます。<code>timeout</code> を短め（5〜10秒）に設定し、ネットワーク呼び出しなどブロッキングする処理は避けましょう。</p>
+          <div class="callout callout-warn">
+            <p class="callout-title">運用上の注意</p>
+            <p>フックは <strong>毎メッセージ／毎ツール実行ごと</strong> に走るので、重い処理を書くと体感速度が落ちます。<code>timeout</code> を短め（5〜10秒）に設定し、ネットワーク呼び出しなどブロッキングする処理は避けましょう。</p>
+          </div>
+        </section>
       </div>
-    </section>
 
-    <footer>
-      <p>このドキュメントは Cursor 上の Claude Code 拡張機能で、毎メッセージに日時情報を持たせる方法をまとめたものです。質問や改善案があれば作成者まで。</p>
-    </footer>
-  </main>
+      <footer class="article-footer">
+        <a href="../" class="back-link">← Tips一覧に戻る</a>
+      </footer>
+    </article>
+
+    <aside class="toc-sidebar">
+      <p class="toc-title">この記事の内容</p>
+      <ul class="toc-list">
+        <li><a href="#problem">なぜ日時表示が必要なのか</a></li>
+        <li><a href="#mechanism">仕組み（2層構造）</a></li>
+        <li><a href="#setup">セットアップ手順</a></li>
+        <li><a href="#faq">よくある疑問・注意点</a></li>
+        <li><a href="#applications">汎用フック活用例</a></li>
+      </ul>
+    </aside>
+  </div>
+
+  <footer class="site-footer">
+    <p>このサイトのソースは <a href="https://github.com/aoyama-webrider/ai-agent-tips" target="_blank" rel="noopener">GitHub</a> で管理しています。</p>
+  </footer>
 </body>
 </html>
