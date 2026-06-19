@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Cursor内のClaude Codeチャットに日時を表示する — AI Agent Tips</title>
+  <title>IDE内のClaude Codeチャットに日時を表示する — AI Agent Tips</title>
   <meta name="description" content="標準では出ない各メッセージの送信時刻を、UserPromptSubmitフックとグローバルCLAUDE.mdで返信冒頭に表示させる設定方法">
 
   <link rel="icon" type="image/png" href="../favicon.png">
@@ -522,9 +522,9 @@
           <span class="article-tag">Claude Code</span>
           <span class="article-tag">Hook</span>
           <span class="article-tag">UserPromptSubmit</span>
-          <span class="article-tag">Cursor</span>
+          <span class="article-tag">IDE</span>
         </div>
-        <h1 class="article-title">Cursor内のClaude Codeチャットに日時を表示する</h1>
+        <h1 class="article-title">IDE内のClaude Codeチャットに日時を表示する</h1>
         <div class="article-meta">
           <span class="article-meta-item">Claude Codeをすでに使っている人向け</span>
         </div>
@@ -534,9 +534,9 @@
         <section id="problem">
           <h2>なぜ日時表示が必要なのか</h2>
 
-          <p>Cursor内のClaude Codeチャットでは、各メッセージの送信時刻が画面に出ません。少し前のやり取りを遡るときに <strong>「これいつの会話だっけ？」</strong> が分からず、作業の経過や時系列が把握しづらくなります。</p>
+          <p>IDE内のClaude Codeチャットでは、各メッセージの送信時刻が画面に出ません。少し前のやり取りを遡るときに <strong>「これいつの会話だっけ？」</strong> が分からず、作業の経過や時系列が把握しづらくなります。</p>
 
-          <p>Claude Code本体には <code>showMessageTimestamps</code> という設定がありますが、Cursor拡張機能のチャットUIはこの設定を読みません（CursorがUIを独自に描画しているため）。なので設定を <code>true</code> にしても効きません。</p>
+          <p>Claude Code本体には <code>showMessageTimestamps</code> という設定がありますが、IDE拡張機能のチャットUIはこの設定を読みません（IDEがUIを独自に描画しているため）。なので設定を <code>true</code> にしても効きません。</p>
 
           <p>そこで「<strong>Claudeに毎回時刻を伝えて、返信の冒頭に文字として書いてもらう</strong>」運用にします。UI実装に依存せず、チャット履歴に時刻が確実に残ります。</p>
         </section>
@@ -675,8 +675,8 @@
           <h3>タイムゾーン</h3>
           <p>PCのローカル時刻が使われます。海外出張や時差のある作業環境では <code>Get-Date</code> がローカル時刻を返すので、JSTを明示したい場合はフォーマットに <code>K</code>（タイムゾーンオフセット）を追加します。</p>
 
-          <h3>Cursor内蔵AI（Composer/Chat）には効かない</h3>
-          <p>このフックはClaude Codeプラグイン専用です。Cursor内蔵のAI機能（Cmd+K、Composer、Chat）はAnthropicとは別のAPI経路で動いているため、この設定の影響を受けません。</p>
+          <h3>IDE内蔵AI（Composer/Chat）には効かない</h3>
+          <p>このフックはClaude Codeプラグイン専用です。IDE内蔵のAI機能（Cmd+K、Composer、Chat）はAnthropicとは別のAPI経路で動いているため、この設定の影響を受けません。</p>
 
           <h3>ワークスペース別の記憶（メモリ）と併用するとき</h3>
           <p>記憶ファイル（<code>~/.claude/projects/&lt;sanitized-cwd&gt;/memory/</code>）に同じルールを書いても効きますが、ワークスペース単位の効力範囲なので注意。<strong>全セッション共通にしたいルールはグローバルCLAUDE.mdへ</strong> が原則です。</p>
