@@ -1,0 +1,783 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Claude Codeの「完了」「許可待ち」を音で知らせる — AI Agent Tips</title>
+  <meta name="description" content="StopフックとPermissionRequestフックを使い、Claude Codeの応答完了や権限要求のタイミングで通知音を鳴らす設定方法。ながら作業の取りこぼしを防ぐ。">
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+JP:wght@400;500;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+
+  <style>
+    :root {
+      --text-primary: #18181b;
+      --text-secondary: #52525b;
+      --text-tertiary: #a1a1aa;
+      --bg-base: #fafaf9;
+      --bg-elevated: #ffffff;
+      --bg-soft: #f4f4f5;
+      --bg-code: #1e1e2e;
+      --code-text: #cdd6f4;
+      --border-subtle: #e4e4e7;
+      --border-medium: #d4d4d8;
+      --accent: #2563eb;
+      --accent-soft: #dbeafe;
+      --accent-hover: #1d4ed8;
+      --warn: #d97706;
+      --warn-soft: #fef3c7;
+      --tip: #059669;
+      --tip-soft: #d1fae5;
+      --radius-sm: 6px;
+      --radius-md: 10px;
+      --radius-lg: 16px;
+      --shadow-sm: 0 1px 2px rgba(24, 24, 27, 0.04);
+      --shadow-md: 0 4px 12px rgba(24, 24, 27, 0.05);
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    html { font-size: 16px; scroll-behavior: smooth; }
+
+    body {
+      font-family: "Inter", "Noto Sans JP", -apple-system, "Hiragino Sans", "Yu Gothic Medium", "Yu Gothic", sans-serif;
+      color: var(--text-primary);
+      background: var(--bg-base);
+      line-height: 1.85;
+      letter-spacing: 0.005em;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+      font-feature-settings: "palt" 1;
+    }
+
+    .site-header {
+      border-bottom: 1px solid var(--border-subtle);
+      padding: 18px 0;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      background: rgba(255, 255, 255, 0.85);
+      backdrop-filter: blur(10px);
+    }
+
+    .site-header-inner {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 0 32px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .logo {
+      font-weight: 700;
+      font-size: 1.05rem;
+      letter-spacing: -0.01em;
+      color: var(--text-primary);
+      text-decoration: none;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .logo-mark {
+      display: inline-block;
+      width: 22px;
+      height: 22px;
+      background: linear-gradient(135deg, #2563eb 0%, #8b5cf6 100%);
+      border-radius: 6px;
+      position: relative;
+    }
+
+    .logo-mark::after {
+      content: "";
+      position: absolute;
+      inset: 5px;
+      background: white;
+      border-radius: 2px;
+    }
+
+    .site-nav a {
+      color: var(--text-secondary);
+      text-decoration: none;
+      font-size: 0.9rem;
+      font-weight: 500;
+      margin-left: 24px;
+      transition: color 0.15s ease;
+    }
+
+    .site-nav a:hover {
+      color: var(--text-primary);
+    }
+
+    .layout {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 56px 32px 96px;
+      display: grid;
+      grid-template-columns: 1fr 220px;
+      gap: 64px;
+      align-items: start;
+    }
+
+    .article {
+      min-width: 0;
+    }
+
+    .breadcrumb {
+      font-size: 0.85rem;
+      color: var(--text-tertiary);
+      margin-bottom: 24px;
+    }
+
+    .breadcrumb a {
+      color: var(--text-tertiary);
+      text-decoration: none;
+      transition: color 0.15s ease;
+    }
+
+    .breadcrumb a:hover {
+      color: var(--accent);
+    }
+
+    .breadcrumb-sep {
+      margin: 0 8px;
+      color: var(--border-medium);
+    }
+
+    .article-header {
+      margin-bottom: 48px;
+      padding-bottom: 32px;
+      border-bottom: 1px solid var(--border-subtle);
+    }
+
+    .article-tags {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+      margin-bottom: 20px;
+    }
+
+    .article-tag {
+      font-size: 0.72rem;
+      font-weight: 600;
+      letter-spacing: 0.04em;
+      background: var(--accent-soft);
+      color: var(--accent);
+      padding: 3px 10px;
+      border-radius: 4px;
+      text-transform: uppercase;
+    }
+
+    .article-title {
+      font-size: clamp(1.75rem, 4vw, 2.5rem);
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      line-height: 1.25;
+      color: var(--text-primary);
+      margin-bottom: 20px;
+    }
+
+    .article-meta {
+      display: flex;
+      gap: 24px;
+      flex-wrap: wrap;
+      font-size: 0.88rem;
+      color: var(--text-tertiary);
+    }
+
+    .article-meta-item {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .article-content h2 {
+      font-size: 1.5rem;
+      font-weight: 700;
+      letter-spacing: -0.015em;
+      margin: 56px 0 20px;
+      padding-top: 8px;
+      color: var(--text-primary);
+      scroll-margin-top: 80px;
+    }
+
+    .article-content h3 {
+      font-size: 1.15rem;
+      font-weight: 600;
+      margin: 36px 0 14px;
+      letter-spacing: -0.01em;
+      color: var(--text-primary);
+      scroll-margin-top: 80px;
+    }
+
+    .article-content p {
+      margin-bottom: 18px;
+      color: var(--text-primary);
+    }
+
+    .article-content ul, .article-content ol {
+      margin: 0 0 20px;
+      padding-left: 1.5em;
+    }
+
+    .article-content li {
+      margin-bottom: 8px;
+      color: var(--text-primary);
+    }
+
+    .article-content strong {
+      font-weight: 700;
+      color: var(--text-primary);
+    }
+
+    .article-content code {
+      font-family: "JetBrains Mono", "SFMono-Regular", Consolas, monospace;
+      font-size: 0.88em;
+      background: var(--bg-soft);
+      color: var(--text-primary);
+      padding: 2px 7px;
+      border-radius: 4px;
+      border: 1px solid var(--border-subtle);
+    }
+
+    .article-content pre {
+      background: var(--bg-code);
+      color: var(--code-text);
+      border-radius: var(--radius-md);
+      padding: 20px 24px;
+      overflow-x: auto;
+      margin: 20px 0 24px;
+      font-size: 0.86rem;
+      line-height: 1.7;
+      box-shadow: var(--shadow-md);
+      position: relative;
+    }
+
+    .article-content pre code {
+      background: none;
+      color: inherit;
+      padding: 0;
+      font-size: inherit;
+      border: none;
+      font-family: "JetBrains Mono", "SFMono-Regular", Consolas, monospace;
+    }
+
+    .callout {
+      background: var(--bg-elevated);
+      border: 1px solid var(--border-subtle);
+      border-left: 3px solid var(--accent);
+      border-radius: var(--radius-md);
+      padding: 18px 22px;
+      margin: 24px 0;
+      box-shadow: var(--shadow-sm);
+    }
+
+    .callout-warn {
+      border-left-color: var(--warn);
+      background: linear-gradient(to right, var(--warn-soft), var(--bg-elevated));
+    }
+
+    .callout-tip {
+      border-left-color: var(--tip);
+      background: linear-gradient(to right, var(--tip-soft), var(--bg-elevated));
+    }
+
+    .callout-title {
+      font-weight: 700;
+      font-size: 0.85rem;
+      letter-spacing: 0.02em;
+      text-transform: uppercase;
+      margin: 0 0 8px;
+      color: var(--accent);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .callout-warn .callout-title { color: var(--warn); }
+    .callout-tip .callout-title { color: var(--tip); }
+
+    .callout p:last-child { margin-bottom: 0; }
+
+    .step {
+      background: var(--bg-elevated);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-lg);
+      padding: 28px 32px;
+      margin: 24px 0;
+      box-shadow: var(--shadow-sm);
+    }
+
+    .step-header {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      margin-bottom: 16px;
+    }
+
+    .step-num {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 32px;
+      height: 32px;
+      background: linear-gradient(135deg, #2563eb 0%, #8b5cf6 100%);
+      color: white;
+      border-radius: 50%;
+      font-size: 0.85rem;
+      font-weight: 700;
+      flex-shrink: 0;
+    }
+
+    .step-title {
+      font-size: 1.15rem;
+      font-weight: 600;
+      letter-spacing: -0.01em;
+      margin: 0;
+    }
+
+    .diagram {
+      background: var(--bg-elevated);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-md);
+      padding: 24px 28px;
+      font-family: "JetBrains Mono", monospace;
+      font-size: 0.82rem;
+      line-height: 1.7;
+      white-space: pre;
+      overflow-x: auto;
+      margin: 24px 0;
+      color: var(--text-secondary);
+      box-shadow: var(--shadow-sm);
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 20px 0 28px;
+      font-size: 0.92rem;
+      background: var(--bg-elevated);
+      border-radius: var(--radius-md);
+      overflow: hidden;
+      box-shadow: var(--shadow-sm);
+    }
+
+    th, td {
+      padding: 12px 16px;
+      text-align: left;
+      border-bottom: 1px solid var(--border-subtle);
+      vertical-align: top;
+    }
+
+    th {
+      background: var(--bg-soft);
+      font-weight: 600;
+      font-size: 0.85rem;
+      color: var(--text-secondary);
+      letter-spacing: 0.02em;
+    }
+
+    tr:last-child td {
+      border-bottom: none;
+    }
+
+    .toc-sidebar {
+      position: sticky;
+      top: 100px;
+      align-self: start;
+    }
+
+    .toc-title {
+      font-size: 0.75rem;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--text-tertiary);
+      margin-bottom: 14px;
+    }
+
+    .toc-list {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+    }
+
+    .toc-list li {
+      margin-bottom: 4px;
+    }
+
+    .toc-list a {
+      display: block;
+      color: var(--text-secondary);
+      text-decoration: none;
+      font-size: 0.875rem;
+      padding: 6px 0 6px 12px;
+      border-left: 2px solid var(--border-subtle);
+      transition: all 0.15s ease;
+      line-height: 1.5;
+    }
+
+    .toc-list a:hover {
+      color: var(--accent);
+      border-left-color: var(--accent);
+    }
+
+    .article-footer {
+      margin-top: 80px;
+      padding-top: 32px;
+      border-top: 1px solid var(--border-subtle);
+    }
+
+    .back-link {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      color: var(--accent);
+      text-decoration: none;
+      font-weight: 600;
+      font-size: 0.95rem;
+      padding: 10px 16px;
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-md);
+      background: var(--bg-elevated);
+      transition: all 0.15s ease;
+    }
+
+    .back-link:hover {
+      background: var(--accent-soft);
+      border-color: var(--accent);
+    }
+
+    .site-footer {
+      border-top: 1px solid var(--border-subtle);
+      padding: 40px 32px;
+      text-align: center;
+      color: var(--text-tertiary);
+      font-size: 0.85rem;
+      background: var(--bg-elevated);
+    }
+
+    .site-footer a {
+      color: var(--accent);
+      text-decoration: none;
+    }
+
+    @media (max-width: 960px) {
+      .layout {
+        grid-template-columns: 1fr;
+        gap: 0;
+        padding: 40px 24px 64px;
+      }
+      .toc-sidebar {
+        position: static;
+        order: -1;
+        padding: 18px 20px;
+        background: var(--bg-elevated);
+        border: 1px solid var(--border-subtle);
+        border-radius: var(--radius-md);
+        margin-bottom: 32px;
+      }
+      .toc-list a {
+        font-size: 0.85rem;
+      }
+    }
+
+    @media (max-width: 640px) {
+      .site-header-inner { padding: 0 20px; }
+      .step { padding: 20px 22px; }
+      .article-content pre { padding: 16px 18px; font-size: 0.8rem; }
+      .article-content h2 { font-size: 1.3rem; margin-top: 40px; }
+      .article-content h3 { font-size: 1.05rem; }
+    }
+  </style>
+</head>
+<body>
+  <header class="site-header">
+    <div class="site-header-inner">
+      <a href="../" class="logo">
+        <span class="logo-mark"></span>
+        AI Agent Tips
+      </a>
+      <nav class="site-nav">
+        <a href="https://github.com/aoyama-webrider/ai-agent-tips" target="_blank" rel="noopener">GitHub</a>
+      </nav>
+    </div>
+  </header>
+
+  <div class="layout">
+    <article class="article">
+      <p class="breadcrumb">
+        <a href="../">Tips一覧</a>
+        <span class="breadcrumb-sep">/</span>
+        <span>音で通知</span>
+      </p>
+
+      <header class="article-header">
+        <div class="article-tags">
+          <span class="article-tag">Claude Code</span>
+          <span class="article-tag">Hook</span>
+          <span class="article-tag">Stop</span>
+          <span class="article-tag">PermissionRequest</span>
+        </div>
+        <h1 class="article-title">Claude Codeの「完了」「許可待ち」を音で知らせる</h1>
+        <div class="article-meta">
+          <span class="article-meta-item">2026-06-19</span>
+          <span class="article-meta-item">読了 約5分</span>
+          <span class="article-meta-item">Claude Codeをすでに使っている人向け</span>
+        </div>
+      </header>
+
+      <div class="article-content">
+        <section id="problem">
+          <h2>なぜ音通知が必要なのか</h2>
+
+          <p>Claude Codeに少し重めの作業を投げると、完了まで数十秒〜数分かかることがあります。その待ち時間に別の画面で作業していると、<strong>「終わったことに気づかず放置」「許可を求められて止まっているのに気づかず時間をロス」</strong> ということが起こりがちです。</p>
+
+          <p>そこで、Claude Codeが <strong>応答を終えたとき</strong> と <strong>コマンド実行などの許可を求めてきたとき</strong> に通知音を鳴らすようにします。ながら作業をしていても、音だけで「いま自分の番が来た」と分かるようになります。</p>
+
+          <div class="callout callout-tip">
+            <p class="callout-title">この記事で使うフック</p>
+            <p><code>Stop</code>（Claudeが返答を完了したとき）と <code>PermissionRequest</code>（権限の許可を求めてきたとき）の2つです。完了音と許可待ち音で別々の音を割り当てると、振り向かなくても状況が判別できて便利です。</p>
+          </div>
+        </section>
+
+        <section id="mechanism">
+          <h2>仕組み</h2>
+
+          <p>Claude Codeのフックに、音声ファイルを再生するコマンドを登録するだけです。Windowsなら標準搭載のPowerShellで、OS同梱のwavファイルを鳴らせるので、追加インストールは不要です。</p>
+
+          <div class="diagram">[Claudeが返答を完了]
+        ↓
+[Stopフック発火] PowerShellでchimes.wavを再生 → 「完了したよ」の音
+
+[Claudeがコマンド実行の許可を要求]
+        ↓
+[PermissionRequestフック発火] notify.wavを再生 → 「確認して」の音</div>
+
+          <p>ポイントは、再生に <code>PlaySync()</code> を使うこと。フックは短命なサブプロセスとして起動するため、非同期再生（<code>Play()</code>）だと音が鳴り切る前にプロセスが終了して無音になることがあります。<code>PlaySync()</code> は再生完了まで待つので確実です。</p>
+        </section>
+
+        <section id="setup">
+          <h2>セットアップ手順</h2>
+
+          <p>所要時間: 約5分。Windows環境（PowerShell）を前提に書いています。Mac/Linuxの場合は <a href="#faq">注意点セクション</a> を参照してください。</p>
+
+          <div class="step">
+            <div class="step-header">
+              <span class="step-num">1</span>
+              <h3 class="step-title">settings.json にフックを追加</h3>
+            </div>
+
+            <p>ファイル: <code>C:\Users\&lt;ユーザー名&gt;\.claude\settings.json</code></p>
+
+            <p><code>hooks</code> オブジェクトの中に、以下の <code>Stop</code> と <code>PermissionRequest</code> のブロックを追加します。<code>hooks</code> キーが既にある場合は中に追記、なければ新規作成してください。</p>
+
+            <pre><code>{
+  "hooks": {
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "powershell.exe -Command \"(New-Object Media.SoundPlayer 'C:\\Windows\\Media\\chimes.wav').PlaySync()\""
+          }
+        ]
+      }
+    ],
+    "PermissionRequest": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "powershell.exe -Command \"(New-Object Media.SoundPlayer 'C:\\Windows\\Media\\notify.wav').PlaySync()\""
+          }
+        ]
+      }
+    ]
+  }
+}</code></pre>
+
+            <div class="callout callout-tip">
+              <p class="callout-title">完了音だけでいいなら</p>
+              <p>まずは <code>Stop</code> だけ入れてみるのがおすすめです。許可待ちにも気づきたくなったら <code>PermissionRequest</code> を足す、という順で増やすと音の鳴り方を体で覚えられます。</p>
+            </div>
+          </div>
+
+          <div class="step">
+            <div class="step-header">
+              <span class="step-num">2</span>
+              <h3 class="step-title">使えるWindows標準サウンドを選ぶ</h3>
+            </div>
+
+            <p><code>C:\Windows\Media\</code> フォルダにOS標準のwavファイルが入っています。エクスプローラで開いてダブルクリックすると試聴できます。よく使われるもの：</p>
+
+            <table>
+              <thead>
+                <tr>
+                  <th>ファイル名</th>
+                  <th>音のイメージ</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td><code>chimes.wav</code></td>
+                  <td>やわらかいチャイム。完了通知向き</td>
+                </tr>
+                <tr>
+                  <td><code>notify.wav</code></td>
+                  <td>短い通知音。許可待ち向き</td>
+                </tr>
+                <tr>
+                  <td><code>ding.wav</code></td>
+                  <td>軽い「ポーン」。控えめにしたいとき</td>
+                </tr>
+                <tr>
+                  <td><code>tada.wav</code></td>
+                  <td>ファンファーレ。完了をはっきり知らせたいとき</td>
+                </tr>
+                <tr>
+                  <td><code>Windows Notify System Generic.wav</code></td>
+                  <td>標準の通知音。Windowsらしい音</td>
+                </tr>
+              </tbody>
+            </table>
+
+            <p>パスをそのまま <code>command</code> の中の <code>'C:\\Windows\\Media\\〇〇.wav'</code> 部分に差し替えればOKです（JSON内なのでバックスラッシュは <code>\\</code> と2個重ねる点に注意）。</p>
+          </div>
+
+          <div class="step">
+            <div class="step-header">
+              <span class="step-num">3</span>
+              <h3 class="step-title">設定を反映する</h3>
+            </div>
+
+            <p>以下のいずれかでフックを読み込ませます：</p>
+            <ul>
+              <li>Claude Codeのチャット内で <code>/hooks</code> を一度開いて閉じる（設定が再読み込みされる）</li>
+              <li>Claude Codeを再起動する</li>
+            </ul>
+          </div>
+
+          <div class="step">
+            <div class="step-header">
+              <span class="step-num">4</span>
+              <h3 class="step-title">動作確認</h3>
+            </div>
+
+            <p>Claudeに簡単な質問を1つ投げてみてください。返答が終わった瞬間に <code>Stop</code> の音（chimes）が鳴れば成功です。次にコマンド実行を伴う依頼（例: 「いまのフォルダのファイル一覧を出して」）をすると、許可ダイアログが出るタイミングで <code>PermissionRequest</code> の音（notify）が鳴ります。</p>
+
+            <p>鳴らない場合は次の項目をチェック：</p>
+            <ul>
+              <li>settings.json のJSON構文が壊れていないか（カンマの抜け、バックスラッシュの数に注意）</li>
+              <li>フックがロードされているか（<code>/hooks</code> で確認できる）</li>
+              <li>指定したwavファイルが実際に <code>C:\Windows\Media\</code> に存在するか</li>
+              <li>PC本体やアプリの音量がミュートになっていないか</li>
+              <li>セッションを再起動したか</li>
+            </ul>
+          </div>
+        </section>
+
+        <section id="faq">
+          <h2>よくある疑問・注意点</h2>
+
+          <h3>音が鳴りすぎてうるさいとき</h3>
+          <ul>
+            <li>まず <code>PermissionRequest</code> を外して <code>Stop</code> だけにする</li>
+            <li>権限の許可プロンプト自体が多い場合は、よく使う安全なコマンドを <code>settings.json</code> の <code>permissions.allow</code> に登録しておくと、そもそも許可要求＝音が減ります</li>
+            <li>もっと控えめな音（<code>ding.wav</code> など）に変える</li>
+          </ul>
+
+          <h3>自前の音源を鳴らしたい</h3>
+          <p>任意の <code>.wav</code> ファイルのパスを指定すれば使えます。<code>SoundPlayer</code> はwav形式のみ対応で、mp3は再生できない点に注意。mp3を使いたい場合は <code>(New-Object Media.SoundPlayer ...)</code> の代わりに以下のようにWindows Media Player経由で鳴らせます：</p>
+          <pre><code>"command": "powershell.exe -NoProfile -Command \"Add-Type -AssemblyName presentationCore; $p = New-Object System.Windows.Media.MediaPlayer; $p.Open([uri]'C:\\path\\to\\sound.mp3'); $p.Play(); Start-Sleep -Seconds 2\""</code></pre>
+
+          <h3>音量を調整したい</h3>
+          <p><code>SoundPlayer</code> 自体には音量指定がありません。OSのアプリ音量ミキサーでPowerShellの音量を下げるか、あらかじめ音量を絞ったwavファイルを用意してください。</p>
+
+          <h3>Mac / Linux の場合</h3>
+          <p>PowerShellの代わりにOS標準の再生コマンドを使います。</p>
+          <p>macOS（<code>afplay</code> が標準搭載）：</p>
+          <pre><code>"command": "afplay /System/Library/Sounds/Glass.aiff"</code></pre>
+          <p>Linux（<code>paplay</code> や <code>aplay</code> など、環境にあるものを使う）：</p>
+          <pre><code>"command": "paplay /usr/share/sounds/freedesktop/stereo/complete.oga"</code></pre>
+
+          <h3>止めたいとき</h3>
+          <ul>
+            <li>一時的に消したいだけなら、PCやアプリの音量をミュートする</li>
+            <li>完全にオフにするには <code>settings.json</code> の <code>Stop</code> / <code>PermissionRequest</code> フックのブロックを削除する</li>
+          </ul>
+
+          <h3>処理が遅くならない?</h3>
+          <p>音の再生は一瞬で終わるうえ、<code>Stop</code> はメッセージごとに1回・<code>PermissionRequest</code> は許可要求時のみなので、体感への影響はほぼありません。ただしフックの中でネットワーク通信など重い処理を足すと遅延の原因になるので、音を鳴らすだけに留めるのが安全です。</p>
+        </section>
+
+        <section id="applications">
+          <h2>音以外の通知方法</h2>
+
+          <p>同じ <code>Stop</code> / <code>PermissionRequest</code> フックの仕組みで、音以外の通知もできます。集中作業中や、席を外しているときに気づきたいケースで使い分けると便利です。</p>
+
+          <table>
+            <thead>
+              <tr>
+                <th>通知方法</th>
+                <th>使いどころ</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>Windowsのトースト通知</td>
+                <td>音を出せない環境（会議中・イヤホンなし）。画面右下にポップアップ</td>
+              </tr>
+              <tr>
+                <td>Slack / Discordへ通知</td>
+                <td>席を外していてもスマホで気づける。Webhook URLにPOSTするだけ</td>
+              </tr>
+              <tr>
+                <td>音声読み上げ</td>
+                <td>「完了しました」と喋らせる。画面を見ていなくても内容が分かる</td>
+              </tr>
+            </tbody>
+          </table>
+
+          <h3>例: 完了時にWindowsトースト通知を出す</h3>
+          <p>音の代わり（または併用）に、画面右下へポップアップを出すパターン：</p>
+          <pre><code>"command": "powershell.exe -NoProfile -Command \"[Console]::OutputEncoding=[Text.Encoding]::UTF8; New-BurntToastNotification -Text 'Claude Code', '応答が完了しました'\""</code></pre>
+          <div class="callout callout-warn">
+            <p class="callout-title">事前準備が必要</p>
+            <p>上の <code>New-BurntToastNotification</code> はモジュール <code>BurntToast</code> のインストール（<code>Install-Module BurntToast</code>）が前提です。標準機能だけで完結させたい場合は、まず本記事の音通知から始めるのがおすすめです。</p>
+          </div>
+
+          <h3>例: 完了時に音声で読み上げる</h3>
+          <pre><code>"command": "powershell.exe -NoProfile -Command \"Add-Type -AssemblyName System.Speech; (New-Object System.Speech.Synthesis.SpeechSynthesizer).Speak('完了しました')\""</code></pre>
+
+          <div class="callout callout-tip">
+            <p class="callout-title">フックの全体像をもっと知りたい人へ</p>
+            <p>フックには <code>Stop</code> / <code>PermissionRequest</code> のほかにも、ツール実行前後（<code>PreToolUse</code> / <code>PostToolUse</code>）やメッセージ送信時（<code>UserPromptSubmit</code>）などがあります。<a href="../timestamp/">日時表示のTip</a> の後半で各イベントの一覧と活用例をまとめているので、あわせてどうぞ。</p>
+          </div>
+        </section>
+      </div>
+
+      <footer class="article-footer">
+        <a href="../" class="back-link">← Tips一覧に戻る</a>
+      </footer>
+    </article>
+
+    <aside class="toc-sidebar">
+      <p class="toc-title">この記事の内容</p>
+      <ul class="toc-list">
+        <li><a href="#problem">なぜ音通知が必要なのか</a></li>
+        <li><a href="#mechanism">仕組み</a></li>
+        <li><a href="#setup">セットアップ手順</a></li>
+        <li><a href="#faq">よくある疑問・注意点</a></li>
+        <li><a href="#applications">音以外の通知方法</a></li>
+      </ul>
+    </aside>
+  </div>
+
+  <footer class="site-footer">
+    <p>このサイトのソースは <a href="https://github.com/aoyama-webrider/ai-agent-tips" target="_blank" rel="noopener">GitHub</a> で管理しています。</p>
+  </footer>
+</body>
+</html>

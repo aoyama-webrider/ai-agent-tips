@@ -14,6 +14,8 @@ ai-agent-tips/
 ├── index.html        # Tips一覧のトップページ
 ├── timestamp/        # Cursor内Claude Codeのチャットに日時を表示するTips
 │   └── index.html
+├── sound/            # Claude Codeの完了・許可待ちを音で知らせるTips
+│   └── index.html
 └── README.md
 ```
 
