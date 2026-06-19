@@ -331,6 +331,7 @@
       border-radius: 50%;
       font-size: 0.85rem;
       font-weight: 700;
+      line-height: 1;
       flex-shrink: 0;
     }
 
@@ -338,6 +339,7 @@
       font-size: 1.15rem;
       font-weight: 600;
       letter-spacing: -0.01em;
+      line-height: 1.2;
       margin: 0;
     }
 
@@ -526,7 +528,7 @@
         </div>
         <h1 class="article-title">IDE内のClaude Codeチャットに日時を表示する</h1>
         <div class="article-meta">
-          <span class="article-meta-item">Claude Codeをすでに使っている人向け</span>
+          <span class="article-meta-item">想定環境: Windows ＋ Claude Code拡張（VS Code等）＋ Claudeサブスク</span>
         </div>
       </header>
 
@@ -564,7 +566,18 @@
         <section id="setup">
           <h2>セットアップ手順</h2>
 
-          <p>所要時間: 5〜10分。Windows環境（PowerShell）を前提に書いています。Mac/Linuxの場合は <a href="#faq">注意点セクション</a> を参照してください。</p>
+          <div class="callout callout-tip">
+            <p class="callout-title">最短ルート: AIエージェントに任せる</p>
+            <p>手作業が不安なら、Claude Codeに<strong>このページのURLを渡して</strong>、次のように頼むだけでOKです。<code>settings.json</code> と グローバル <code>CLAUDE.md</code> の両方をAIが編集してくれます。</p>
+            <pre><code>https://aoyama-webrider.github.io/ai-agent-tips/timestamp/
+↑このページのとおり、私の環境に日時表示の設定を反映して。
+・settings.json の hooks と グローバル CLAUDE.md の両方を設定して
+・既存の設定は壊さず、マージして（上書きしない）
+・終わったら、反映に再読み込み（/hooks を開き直す or 再起動）が必要か教えて</code></pre>
+            <p><strong>想定環境</strong>: Windows ＋ VS Codeなどのエディタ ＋ Claude Code拡張 ＋ Claudeサブスク。この前提なら、ほぼそのまま再現できます。ただし<strong>最後の再読み込み（<code>/hooks</code> を開き直す or 再起動）だけは手動</strong>です。</p>
+          </div>
+
+          <p>仕組みを理解しながら自分で設定したい人向けに、手順も載せておきます（所要時間 5〜10分・Windows/PowerShell前提）。Mac/Linuxの場合は <a href="#faq">注意点セクション</a> を参照してください。</p>
 
           <div class="step">
             <div class="step-header">
@@ -574,7 +587,7 @@
 
             <p>ファイル: <code>C:\Users\&lt;ユーザー名&gt;\.claude\settings.json</code></p>
 
-            <p><code>hooks</code> オブジェクトの中に、以下のブロックを追加します。<code>hooks</code> キーが既に存在する場合は中に追記、なければ新規作成してください。</p>
+            <p><code>hooks</code> オブジェクトの中に、以下のブロックを追加します。<strong>すでに <code>hooks</code> がある場合は中身を消さずにマージ</strong>してください（他のフックがあれば、それらを残したまま <code>UserPromptSubmit</code> を足す）。</p>
 
             <pre><code>{
   "hooks": {

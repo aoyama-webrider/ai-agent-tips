@@ -331,6 +331,7 @@
       border-radius: 50%;
       font-size: 0.85rem;
       font-weight: 700;
+      line-height: 1;
       flex-shrink: 0;
     }
 
@@ -338,6 +339,7 @@
       font-size: 1.15rem;
       font-weight: 600;
       letter-spacing: -0.01em;
+      line-height: 1.2;
       margin: 0;
     }
 
@@ -526,7 +528,7 @@
         </div>
         <h1 class="article-title">Claude Codeの「完了」「許可待ち」を音で知らせる</h1>
         <div class="article-meta">
-          <span class="article-meta-item">Claude Codeをすでに使っている人向け</span>
+          <span class="article-meta-item">想定環境: Windows ＋ Claude Code拡張（VS Code等）＋ Claudeサブスク</span>
         </div>
       </header>
 
@@ -563,7 +565,17 @@
         <section id="setup">
           <h2>セットアップ手順</h2>
 
-          <p>所要時間: 約5分。Windows環境（PowerShell）を前提に書いています。Mac/Linuxの場合は <a href="#faq">注意点セクション</a> を参照してください。</p>
+          <div class="callout callout-tip">
+            <p class="callout-title">最短ルート: AIエージェントに任せる</p>
+            <p>手作業が不安なら、Claude Codeに<strong>このページのURLを渡して</strong>、次のように頼むだけでOKです。設定ファイルの編集はAIがやってくれます。</p>
+            <pre><code>https://aoyama-webrider.github.io/ai-agent-tips/sound/
+↑このページのとおり、私の settings.json に通知音の設定を反映して。
+・既存の hooks 設定は壊さず、マージして（上書きしない）
+・終わったら、反映に再読み込み（/hooks を開き直す or 再起動）が必要か教えて</code></pre>
+            <p><strong>想定環境</strong>: Windows ＋ VS Codeなどのエディタ ＋ Claude Code拡張 ＋ Claudeサブスク。この前提なら、ほぼそのまま再現できます。ただし<strong>最後の再読み込み（<code>/hooks</code> を開き直す or 再起動）だけは手動</strong>です（AIはエディタの再起動まではできません）。</p>
+          </div>
+
+          <p>仕組みを理解しながら自分で設定したい人向けに、手順も載せておきます（所要時間 約5分・Windows/PowerShell前提）。Mac/Linuxの場合は <a href="#faq">注意点セクション</a> を参照してください。</p>
 
           <div class="step">
             <div class="step-header">
@@ -573,7 +585,7 @@
 
             <p>ファイル: <code>C:\Users\&lt;ユーザー名&gt;\.claude\settings.json</code></p>
 
-            <p><code>hooks</code> オブジェクトの中に、以下の <code>Stop</code> と <code>PermissionRequest</code> のブロックを追加します。<code>hooks</code> キーが既にある場合は中に追記、なければ新規作成してください。</p>
+            <p><code>hooks</code> オブジェクトの中に、以下の <code>Stop</code> と <code>PermissionRequest</code> のブロックを追加します。<strong>すでに <code>hooks</code> がある場合は中身を消さずにマージ</strong>してください（例: <a href="../timestamp/">日時表示</a> の <code>UserPromptSubmit</code> など他のフックがあるときは、それらを残したまま <code>Stop</code> / <code>PermissionRequest</code> を足す）。</p>
 
             <pre><code>{
   "hooks": {
