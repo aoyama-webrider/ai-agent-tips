@@ -145,11 +145,11 @@
     }
 
     .hero-title {
-      font-size: clamp(2rem, 5vw, 3rem);
+      font-size: clamp(1.5rem, 3.5vw, 2.1rem);
       font-weight: 700;
       letter-spacing: -0.025em;
-      line-height: 1.2;
-      margin-bottom: 24px;
+      line-height: 1.3;
+      margin-bottom: 20px;
       color: var(--text-primary);
     }
 
@@ -304,7 +304,7 @@
     .tip-footer {
       display: flex;
       align-items: center;
-      justify-content: space-between;
+      justify-content: flex-end;
       padding-top: 16px;
       border-top: 1px solid var(--border-subtle);
       font-size: 0.85rem;
@@ -385,8 +385,8 @@
 
   <section class="hero">
     <span class="hero-eyebrow">AI Agent Operation Notes</span>
-    <h1 class="hero-title">日々の小さな工夫が、<br>大きな効率を生む。</h1>
-    <p class="hero-subtitle">Cursor / Claude Code / Codex などのAIエージェントを業務で使う中で見つけた、ちょっと便利な設定や工夫の集めどころ。</p>
+    <h1 class="hero-title">Claude Code活用の小ネタ集</h1>
+    <p class="hero-subtitle">各TipsのリンクをClaude Codeに投げて、「この通り設定して」でOK。</p>
     <div class="hero-meta">
       <span class="hero-meta-item"><strong>2</strong> tips published</span>
       <span class="hero-meta-item">Last updated <strong>2026-06-19</strong></span>
@@ -406,12 +406,10 @@
               <span class="tip-tag">Hook</span>
               <span class="tip-tag">Stop</span>
             </div>
-            <span class="tip-read-time">読了 約5分</span>
           </div>
           <h3 class="tip-title">Claude Codeの「完了」「許可待ち」を音で知らせる</h3>
           <p class="tip-desc">StopフックとPermissionRequestフックで、応答完了や権限要求のタイミングに通知音を鳴らす設定方法。ながら作業の取りこぼしを防ぐ。トースト通知や音声読み上げの応用も。</p>
           <div class="tip-footer">
-            <span class="tip-date">2026-06-19</span>
             <span class="tip-link-text">読む <span class="tip-arrow">→</span></span>
           </div>
         </a>
@@ -423,12 +421,10 @@
               <span class="tip-tag">Hook</span>
               <span class="tip-tag">Cursor</span>
             </div>
-            <span class="tip-read-time">読了 約6分</span>
           </div>
           <h3 class="tip-title">Cursor内のClaude Codeチャットに日時を表示する</h3>
           <p class="tip-desc">標準では出ない各メッセージの送信時刻を、UserPromptSubmitフックとグローバルCLAUDE.mdの組み合わせで返信冒頭に表示させる設定方法。汎用フックの応用例も。</p>
           <div class="tip-footer">
-            <span class="tip-date">2026-05-11</span>
             <span class="tip-link-text">読む <span class="tip-arrow">→</span></span>
           </div>
         </a>
