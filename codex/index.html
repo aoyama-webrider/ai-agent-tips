@@ -1,0 +1,999 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Claude CodeからCodexを呼び出して、レビューと画像生成に使う — AI Agent Tips</title>
+  <meta name="description" content="OpenAI公式プラグイン codex-plugin-cc でClaude CodeからCodexを呼び出す手順と、別視点でのレビュー・gpt-image-2での画像生成の使い方。">
+
+  <link rel="icon" type="image/png" href="../favicon.png">
+  <link rel="apple-touch-icon" href="../favicon.png">
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+JP:wght@400;500;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+
+  <style>
+    :root {
+      --text-primary: #18181b;
+      --text-secondary: #52525b;
+      --text-tertiary: #a1a1aa;
+      --bg-base: #fafaf9;
+      --bg-elevated: #ffffff;
+      --bg-soft: #f4f4f5;
+      --bg-code: #1e1e2e;
+      --code-text: #cdd6f4;
+      --border-subtle: #e4e4e7;
+      --border-medium: #d4d4d8;
+      --accent: #2563eb;
+      --accent-soft: #dbeafe;
+      --accent-hover: #1d4ed8;
+      --warn: #d97706;
+      --tip: #059669;
+      --radius-sm: 6px;
+      --radius-md: 10px;
+      --radius-lg: 16px;
+      --shadow-sm: 0 1px 2px rgba(24, 24, 27, 0.04);
+      --shadow-md: 0 4px 12px rgba(24, 24, 27, 0.05);
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    html { font-size: 16px; scroll-behavior: smooth; }
+
+    body {
+      font-family: "Inter", "Noto Sans JP", -apple-system, "Hiragino Sans", "Yu Gothic Medium", "Yu Gothic", sans-serif;
+      color: var(--text-primary);
+      background: var(--bg-base);
+      line-height: 1.85;
+      letter-spacing: 0.005em;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+      font-feature-settings: "palt" 1;
+    }
+
+    .site-header {
+      border-bottom: 1px solid var(--border-subtle);
+      padding: 18px 0;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      background: rgba(255, 255, 255, 0.85);
+      backdrop-filter: blur(10px);
+    }
+
+    .site-header-inner {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 0 32px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .logo {
+      font-weight: 700;
+      font-size: 1.05rem;
+      letter-spacing: -0.01em;
+      color: var(--text-primary);
+      text-decoration: none;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .logo-mark {
+      display: inline-block;
+      width: 22px;
+      height: 22px;
+      background: linear-gradient(135deg, #2563eb 0%, #8b5cf6 100%);
+      border-radius: 6px;
+      position: relative;
+    }
+
+    .logo-mark::after {
+      content: "";
+      position: absolute;
+      inset: 5px;
+      background: white;
+      border-radius: 2px;
+    }
+
+    .site-nav a {
+      color: var(--text-secondary);
+      text-decoration: none;
+      font-size: 0.9rem;
+      font-weight: 500;
+      margin-left: 24px;
+      transition: color 0.15s ease;
+    }
+
+    .site-nav a:hover {
+      color: var(--text-primary);
+    }
+
+    .layout {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 56px 32px 96px;
+      display: grid;
+      grid-template-columns: 1fr 220px;
+      gap: 64px;
+      align-items: start;
+    }
+
+    .article {
+      min-width: 0;
+    }
+
+    .breadcrumb {
+      font-size: 0.85rem;
+      color: var(--text-tertiary);
+      margin-bottom: 24px;
+    }
+
+    .breadcrumb a {
+      color: var(--text-tertiary);
+      text-decoration: none;
+      transition: color 0.15s ease;
+    }
+
+    .breadcrumb a:hover {
+      color: var(--accent);
+    }
+
+    .breadcrumb-sep {
+      margin: 0 8px;
+      color: var(--border-medium);
+    }
+
+    .article-header {
+      margin-bottom: 48px;
+      padding-bottom: 32px;
+      border-bottom: 1px solid var(--border-subtle);
+    }
+
+    .article-tags {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+      margin-bottom: 20px;
+    }
+
+    .article-tag {
+      font-size: 0.72rem;
+      font-weight: 600;
+      letter-spacing: 0.04em;
+      background: var(--accent-soft);
+      color: var(--accent);
+      padding: 3px 10px;
+      border-radius: 4px;
+      text-transform: uppercase;
+    }
+
+    .article-title {
+      font-size: clamp(1.75rem, 4vw, 2.5rem);
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      line-height: 1.25;
+      color: var(--text-primary);
+      margin-bottom: 20px;
+    }
+
+    .article-meta {
+      display: flex;
+      gap: 24px;
+      flex-wrap: wrap;
+      font-size: 0.88rem;
+      color: var(--text-tertiary);
+    }
+
+    .article-meta-item {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .article-content h2 {
+      font-size: 1.5rem;
+      font-weight: 700;
+      letter-spacing: -0.015em;
+      margin: 56px 0 20px;
+      padding-top: 8px;
+      color: var(--text-primary);
+      scroll-margin-top: 80px;
+    }
+
+    .article-content h3 {
+      font-size: 1.15rem;
+      font-weight: 600;
+      margin: 36px 0 14px;
+      letter-spacing: -0.01em;
+      color: var(--text-primary);
+      scroll-margin-top: 80px;
+    }
+
+    .article-content p {
+      margin-bottom: 18px;
+      color: var(--text-primary);
+    }
+
+    .article-content ul, .article-content ol {
+      margin: 0 0 20px;
+      padding-left: 1.5em;
+    }
+
+    .article-content li {
+      margin-bottom: 8px;
+      color: var(--text-primary);
+    }
+
+    .article-content strong {
+      font-weight: 700;
+      color: var(--text-primary);
+    }
+
+    .article-content code {
+      font-family: "JetBrains Mono", "SFMono-Regular", Consolas, monospace;
+      font-size: 0.88em;
+      background: var(--bg-soft);
+      color: var(--text-primary);
+      padding: 2px 7px;
+      border-radius: 4px;
+      border: 1px solid var(--border-subtle);
+    }
+
+    .article-content pre {
+      background: var(--bg-code);
+      color: var(--code-text);
+      border-radius: var(--radius-md);
+      padding: 20px 24px;
+      overflow-x: auto;
+      margin: 20px 0 24px;
+      font-size: 0.86rem;
+      line-height: 1.7;
+      box-shadow: var(--shadow-md);
+      position: relative;
+    }
+
+    .article-content pre code {
+      background: none;
+      color: inherit;
+      padding: 0;
+      font-size: inherit;
+      border: none;
+      font-family: "JetBrains Mono", "SFMono-Regular", Consolas, monospace;
+    }
+
+    /* 各手順の「どこで実行するか」を示す一行 */
+    .where {
+      font-size: 0.82rem;
+      color: var(--text-tertiary);
+      margin-bottom: 14px;
+    }
+
+    .where-label {
+      color: var(--text-secondary);
+      font-weight: 600;
+    }
+
+    .callout {
+      background: var(--bg-elevated);
+      border: 1px solid var(--border-subtle);
+      border-left: 3px solid var(--accent);
+      border-radius: var(--radius-md);
+      padding: 18px 22px;
+      margin: 24px 0;
+      box-shadow: var(--shadow-sm);
+    }
+
+    /* 種類の違いは左ボーダーと見出しの色だけで示す（背景に色やグラデーションは敷かない） */
+    .callout-warn {
+      border-left-color: var(--warn);
+    }
+
+    .callout-tip {
+      border-left-color: var(--tip);
+    }
+
+    /* コマンド名やChatGPTなどの表記が崩れるため大文字変換はしない */
+    .callout-title {
+      font-weight: 700;
+      font-size: 0.9rem;
+      letter-spacing: 0.01em;
+      margin: 0 0 8px;
+      color: var(--accent);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .callout-warn .callout-title { color: var(--warn); }
+    .callout-tip .callout-title { color: var(--tip); }
+
+    .callout p:last-child { margin-bottom: 0; }
+
+    .step {
+      background: var(--bg-elevated);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-lg);
+      padding: 28px 32px;
+      margin: 24px 0;
+      box-shadow: var(--shadow-sm);
+    }
+
+    .step-header {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      margin-bottom: 16px;
+    }
+
+    .step-num {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 32px;
+      height: 32px;
+      background: linear-gradient(135deg, #2563eb 0%, #8b5cf6 100%);
+      color: white;
+      border-radius: 50%;
+      font-size: 0.85rem;
+      font-weight: 700;
+      line-height: 1;
+      flex-shrink: 0;
+    }
+
+    /* .article-content h3 の margin（上36px/下14px）に負けて番号とズレるため、詳細度を上げて打ち消す */
+    .article-content .step-title {
+      font-size: 1.15rem;
+      font-weight: 600;
+      letter-spacing: -0.01em;
+      line-height: 1.2;
+      margin: 0;
+    }
+
+    .diagram {
+      background: var(--bg-elevated);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-md);
+      padding: 24px 28px;
+      font-family: "JetBrains Mono", monospace;
+      font-size: 0.82rem;
+      line-height: 1.7;
+      white-space: pre;
+      overflow-x: auto;
+      margin: 24px 0;
+      color: var(--text-secondary);
+      box-shadow: var(--shadow-sm);
+    }
+
+    /* 画面が狭いときは表だけを横スクロールさせ、ページ全体は横に伸ばさない */
+    .table-wrap {
+      overflow-x: auto;
+      margin: 20px 0 28px;
+      border-radius: var(--radius-md);
+      box-shadow: var(--shadow-sm);
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 20px 0 28px;
+      font-size: 0.92rem;
+      background: var(--bg-elevated);
+      border-radius: var(--radius-md);
+      overflow: hidden;
+      box-shadow: var(--shadow-sm);
+    }
+
+    .table-wrap table {
+      margin: 0;
+      box-shadow: none;
+      border-radius: 0;
+      /* これ以下には縮めず、狭い画面では横スクロールに切り替える（説明列が潰れるのを防ぐ） */
+      min-width: 480px;
+    }
+
+    th, td {
+      padding: 12px 16px;
+      text-align: left;
+      border-bottom: 1px solid var(--border-subtle);
+      vertical-align: top;
+    }
+
+    th {
+      background: var(--bg-soft);
+      font-weight: 600;
+      font-size: 0.85rem;
+      color: var(--text-secondary);
+      letter-spacing: 0.02em;
+    }
+
+    /* コマンド名は途中で折り返さない（表側を横スクロールさせる） */
+    td code {
+      white-space: nowrap;
+    }
+
+    tr:last-child td {
+      border-bottom: none;
+    }
+
+    .link-list {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+    }
+
+    .link-list li {
+      margin-bottom: 10px;
+    }
+
+    .link-list a {
+      color: var(--accent);
+      text-decoration: none;
+      font-weight: 500;
+    }
+
+    .link-list a:hover {
+      text-decoration: underline;
+    }
+
+    .link-list span {
+      color: var(--text-tertiary);
+      font-size: 0.88rem;
+    }
+
+    .toc-sidebar {
+      position: sticky;
+      top: 100px;
+      align-self: start;
+    }
+
+    .toc-title {
+      font-size: 0.75rem;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--text-tertiary);
+      margin-bottom: 14px;
+    }
+
+    .toc-list {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+    }
+
+    .toc-list li {
+      margin-bottom: 4px;
+    }
+
+    .toc-list a {
+      display: block;
+      color: var(--text-secondary);
+      text-decoration: none;
+      font-size: 0.875rem;
+      padding: 6px 0 6px 12px;
+      border-left: 2px solid var(--border-subtle);
+      transition: all 0.15s ease;
+      line-height: 1.5;
+    }
+
+    .toc-list a:hover {
+      color: var(--accent);
+      border-left-color: var(--accent);
+    }
+
+    .article-footer {
+      margin-top: 80px;
+      padding-top: 32px;
+      border-top: 1px solid var(--border-subtle);
+    }
+
+    .back-link {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      color: var(--accent);
+      text-decoration: none;
+      font-weight: 600;
+      font-size: 0.95rem;
+      padding: 10px 16px;
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-md);
+      background: var(--bg-elevated);
+      transition: all 0.15s ease;
+    }
+
+    .back-link:hover {
+      background: var(--accent-soft);
+      border-color: var(--accent);
+    }
+
+    .site-footer {
+      border-top: 1px solid var(--border-subtle);
+      padding: 40px 32px;
+      text-align: center;
+      color: var(--text-tertiary);
+      font-size: 0.85rem;
+      background: var(--bg-elevated);
+    }
+
+    .site-footer a {
+      color: var(--accent);
+      text-decoration: none;
+    }
+
+    @media (max-width: 960px) {
+      .layout {
+        grid-template-columns: 1fr;
+        gap: 0;
+        padding: 40px 24px 64px;
+      }
+      .toc-sidebar {
+        position: static;
+        order: -1;
+        padding: 18px 20px;
+        background: var(--bg-elevated);
+        border: 1px solid var(--border-subtle);
+        border-radius: var(--radius-md);
+        margin-bottom: 32px;
+      }
+      .toc-list a {
+        font-size: 0.85rem;
+      }
+    }
+
+    @media (max-width: 640px) {
+      .site-header-inner { padding: 0 20px; }
+      .step { padding: 20px 22px; }
+      .article-content pre { padding: 16px 18px; font-size: 0.8rem; }
+      .article-content h2 { font-size: 1.3rem; margin-top: 40px; }
+      .article-content h3 { font-size: 1.05rem; }
+      .article-content .step-title { font-size: 1.05rem; }
+    }
+  </style>
+</head>
+<body>
+  <header class="site-header">
+    <div class="site-header-inner">
+      <a href="../" class="logo">
+        <span class="logo-mark"></span>
+        AI Agent Tips
+      </a>
+      <nav class="site-nav">
+        <a href="https://github.com/aoyama-webrider/ai-agent-tips" target="_blank" rel="noopener">GitHub</a>
+      </nav>
+    </div>
+  </header>
+
+  <div class="layout">
+    <article class="article">
+      <p class="breadcrumb">
+        <a href="../">Tips一覧</a>
+        <span class="breadcrumb-sep">/</span>
+        <span>Codex併用</span>
+      </p>
+
+      <header class="article-header">
+        <div class="article-tags">
+          <span class="article-tag">Claude Code</span>
+          <span class="article-tag">Codex</span>
+          <span class="article-tag">Plugin</span>
+          <span class="article-tag">画像生成</span>
+        </div>
+        <h1 class="article-title">Claude CodeからCodexを呼び出して、レビューと画像生成に使う</h1>
+        <div class="article-meta">
+          <span class="article-meta-item">想定環境: Windows ＋ IDE（VS Code・Cursorなど）＋ Claude Code CLI ＋ Claudeサブスク ＋ ChatGPTサブスク</span>
+        </div>
+      </header>
+
+      <div class="article-content">
+        <section id="value">
+          <h2>Codexを併用する価値</h2>
+
+          <p>Claude CodeとCodexは、どちらもターミナルで動くコーディングエージェントです。<br>片方だけでも仕事は進みますが、行き来できるようにしておくと次の2点で効きます。</p>
+
+          <h3>1. 別の視点でレビューできる</h3>
+
+          <p>同じAIに「これでいい？」と聞くと、自分が書いたものを自分で採点する形になりがちです。<br>Claude Codeで書いた文章やコードをCodexに渡すと、書いた経緯を知らない相手からの指摘が返ってきます。<br>論理の飛躍や説明不足のように、書いた側では気づきにくい箇所が出てきます。</p>
+
+          <h3>2. 画像を生成できる</h3>
+
+          <p>Codexからは gpt-image-2 で画像を生成できます。<br>資料や記事に使うカット画像を、作業を中断せずその場で用意できます。</p>
+
+          <div class="callout callout-tip">
+            <p class="callout-title">利用量はChatGPT側から引かれる</p>
+            <p>このプラグインは、PCに入っているCodex CLIを呼び出しているだけの仕組みです。<br>そのため使った分はChatGPT（Codex）側の利用上限を消費し、Claudeのサブスクとは別枠になります。<br>ChatGPTのサブスク（無料プランを含む）またはOpenAIのAPIキーがあれば使えます。</p>
+          </div>
+        </section>
+
+        <section id="setup">
+          <h2>セットアップ手順</h2>
+
+          <p>所要時間は15分程度です。<br>プラグインの導入は、ターミナルで <code>claude</code> を起動したCLI版から行います（IDEに組み込まれたチャット画面ではありません）。</p>
+
+          <div class="callout callout-warn">
+            <p class="callout-title">この手順は自分で進めるのが確実</p>
+            <p>ブラウザでのログイン認証や、Windowsの管理者権限のダイアログなど、人が操作する場面が含まれます。<br>AIエージェントに丸ごと任せると途中で止まるので、以下を順に進めてください。</p>
+          </div>
+
+          <div class="step">
+            <div class="step-header">
+              <span class="step-num">1</span>
+              <h3 class="step-title">Claude Code CLI があるか確認する</h3>
+            </div>
+
+            <p class="where"><span class="where-label">実行場所</span>: IDEのターミナル</p>
+
+            <p>Codexプラグインを入れるには、CLI版のClaude Codeが必要です。<br>まずバージョンを確認します。</p>
+
+            <pre><code>claude --version</code></pre>
+
+            <p>バージョン番号（例: <code>2.1.91</code>）が表示されればOKです。<br>「コマンドが見つかりません」と出た場合は、次のコマンドでインストールしてください。</p>
+
+            <pre><code>irm https://claude.ai/install.ps1 | iex</code></pre>
+
+            <p>これはWindows（PowerShell）用のインストールコマンドです。<br>Mac/Linuxの場合はインストール方法が異なるので、公式の手順を確認してください。</p>
+          </div>
+
+          <div class="step">
+            <div class="step-header">
+              <span class="step-num">2</span>
+              <h3 class="step-title">Claude Code をCLIで起動する</h3>
+            </div>
+
+            <p class="where"><span class="where-label">実行場所</span>: IDEのターミナル</p>
+
+            <pre><code>claude</code></pre>
+
+            <p>以降のスラッシュコマンドは、この画面に入力します。</p>
+          </div>
+
+          <div class="step">
+            <div class="step-header">
+              <span class="step-num">3</span>
+              <h3 class="step-title">Codexプラグインを入れる</h3>
+            </div>
+
+            <p class="where"><span class="where-label">実行場所</span>: Claude Code CLI</p>
+
+            <p>OpenAIが公式に配布している <code>codex-plugin-cc</code> を使います。<br>次の3つを1行ずつ実行します。</p>
+
+            <p>まずマーケットプレイス（プラグインの配布元）を追加します。</p>
+
+            <pre><code>/plugin marketplace add openai/codex-plugin-cc</code></pre>
+
+            <p>次にプラグインをインストールします。</p>
+
+            <pre><code>/plugin install codex@openai-codex</code></pre>
+
+            <p>最後に再読み込みして反映させます。</p>
+
+            <pre><code>/reload-plugins</code></pre>
+
+            <p>正常に進むと <code>Reloaded: 1 plugin · 7 skills · 6 agents · 3 hooks</code> のような表示が出ます。<br>数字はプラグインの更新で変わるので、エラーが出ていなければ問題ありません。</p>
+          </div>
+
+          <div class="step">
+            <div class="step-header">
+              <span class="step-num">4</span>
+              <h3 class="step-title">Codex CLI をセットアップする</h3>
+            </div>
+
+            <p class="where"><span class="where-label">実行場所</span>: Claude Code CLI</p>
+
+            <pre><code>/codex:setup</code></pre>
+
+            <p>このコマンドで次のことが行われます。</p>
+
+            <ul>
+              <li>Codex CLIがPCに入っているかの確認</li>
+              <li>入っていない場合は「インストールしますか？」と聞かれる（「はい」を選ぶ）</li>
+              <li>ChatGPTアカウントでのログイン状態の確認</li>
+            </ul>
+
+            <p>インストールは内部で <code>npm install -g @openai/codex</code> が実行されます。<br>そのためNode.js 18.18以上が必要です。</p>
+          </div>
+
+          <div class="step">
+            <div class="step-header">
+              <span class="step-num">5</span>
+              <h3 class="step-title">ChatGPTアカウントで認証する</h3>
+            </div>
+
+            <p class="where"><span class="where-label">実行場所</span>: Claude Code CLI</p>
+
+            <p>ログインが済んでいない場合は、次を実行します。</p>
+
+            <pre><code>!codex login</code></pre>
+
+            <p>先頭の <code>!</code> は、Claude Codeのチャット欄からターミナルのコマンドを直接実行するための記号です。<br>ブラウザが自動で開くので、普段使っているChatGPTのアカウントでログインしてください。<br>すでにこのPCでCodexにログインしている場合は、その認証がそのまま使われるのでこの手順は不要です。</p>
+          </div>
+
+          <div class="step">
+            <div class="step-header">
+              <span class="step-num">6</span>
+              <h3 class="step-title">サンドボックスの初期設定（Windowsのみ・初回だけ）</h3>
+            </div>
+
+            <p class="where"><span class="where-label">実行場所</span>: IDEのターミナル</p>
+
+            <pre><code>codex</code></pre>
+
+            <p>初回起動時は、サンドボックス（Codexの実行を隔離する仕組み）の選択画面が出ます。</p>
+
+            <div class="diagram">1. Set up default sandbox (requires Administrator permissions)  ← 推奨
+2. Use non-admin sandbox (higher risk if prompt injected)
+3. Quit</div>
+
+            <ol>
+              <li>「1. Set up default sandbox」を選んでEnterを押す</li>
+              <li>Windowsの管理者権限の確認ダイアログ（UAC）が出る</li>
+              <li>「はい」をクリックする</li>
+            </ol>
+
+            <p>1を選ぶと、Codexが実行するコマンドをOSの機能で隔離した状態で動かせます。<br>2はその隔離が弱く、外部から不正な指示を読み込んだ場合の影響が大きくなります。<br>管理者権限を求められるのは最初の設定時だけなので、1を選んでおくのがおすすめです。</p>
+          </div>
+        </section>
+
+        <section id="review">
+          <h2>活用1: 別の視点でレビューさせる</h2>
+
+          <p>Claude Codeで書いたものを、そのままCodexに渡してレビューさせます。<br>対象が文章かコードかで、使い方が変わります。</p>
+
+          <h3>文章・資料をレビューさせる</h3>
+
+          <p>文章のレビューは専用コマンドではなく、普通の依頼文で頼みます。<br>Claude Codeがプラグイン経由でCodexに投げてくれます。</p>
+
+          <pre><code>以下の観点でCodexにレビューしてもらって
+1. 論理の飛躍・根拠不足
+2. 想定読者にとってわかりにくい箇所
+3. 構成の改善余地（見出し・順序）
+4. 表記揺れ・用語の不統一
+5. 総合評価と、優先度をつけた改善案</code></pre>
+
+          <p>観点を並べて渡すのがコツです。<br>「レビューして」だけだと感想に近い返答になりやすく、直すべき箇所が絞れません。</p>
+
+          <h3>コードをレビューさせる</h3>
+
+          <p>コードにはGitの差分を見る専用コマンドがあります。</p>
+
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>コマンド</th>
+                  <th>何をするか</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td><code>/codex:review</code></td>
+                  <td>いまの変更（未コミットの差分）を通常の観点でレビュー</td>
+                </tr>
+                <tr>
+                  <td><code>/codex:review --base main</code></td>
+                  <td>mainとの差分＝ブランチ全体をレビュー</td>
+                </tr>
+                <tr>
+                  <td><code>/codex:adversarial-review</code></td>
+                  <td>設計や方針そのものを疑う、厳しめのレビュー。観点を書き添えられる</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <p>どちらも読み取り専用で、コードは書き換えません。<br>ファイル数が多いと時間がかかるので、<code>--background</code> を付けて裏で走らせるのが現実的です。</p>
+
+          <pre><code>/codex:review --background
+/codex:status
+/codex:result</code></pre>
+
+          <p><code>/codex:status</code> で進行状況を確認し、終わったら <code>/codex:result</code> で結果を受け取ります。</p>
+
+          <div class="callout callout-tip">
+            <p class="callout-title">修正まで任せたいときは /codex:rescue</p>
+            <p>指摘をもらうだけでなく、調査や修正まで任せたいときは <code>/codex:rescue</code> を使います。<br>「なぜテストが落ちるのか調べて」のように、依頼内容を続けて書きます。<br>時間がかかることが多いので、こちらも <code>--background</code> と併用するのがおすすめです。</p>
+          </div>
+        </section>
+
+        <section id="image">
+          <h2>活用2: 画像を生成する</h2>
+
+          <p>Codexからは gpt-image-2 で画像を生成できます。<br>ただしプラグインには画像生成用のコマンドがなく、Claude Code経由での生成は現状できません。<br>画像を作るときは、ターミナルで <code>codex</code> を直接起動します。</p>
+
+          <div class="step">
+            <div class="step-header">
+              <span class="step-num">1</span>
+              <h3 class="step-title">対話モードを起動する</h3>
+            </div>
+
+            <p class="where"><span class="where-label">実行場所</span>: IDEのターミナル</p>
+
+            <pre><code>codex</code></pre>
+
+            <p>OpenAI公式のCodex CLIが起動し、TUI（文字ベースの操作画面）が開きます。</p>
+          </div>
+
+          <div class="step">
+            <div class="step-header">
+              <span class="step-num">2</span>
+              <h3 class="step-title">画像をリクエストする</h3>
+            </div>
+
+            <p class="where"><span class="where-label">実行場所</span>: Codex TUI</p>
+
+            <pre><code>日本人の男性会社員の写真を生成</code></pre>
+
+            <p>画像生成の機能を明示的に呼び出したい場合は、依頼文の末尾に <code>$imagegen</code> を付けます。</p>
+          </div>
+
+          <div class="step">
+            <div class="step-header">
+              <span class="step-num">3</span>
+              <h3 class="step-title">生成された画像を受け取る</h3>
+            </div>
+
+            <p>完了するとCodexがファイルパスを表示します。</p>
+
+            <pre><code>file:///C:/Users/&lt;ユーザー名&gt;/.codex/generated_images/019dffc6-.../ig_xxxxx.png</code></pre>
+
+            <p>Codex側に保存先を指定するオプションはありません。<br>生成後に、プロジェクトのフォルダへコピーまたは移動して使ってください。</p>
+          </div>
+
+          <div class="callout callout-warn">
+            <p class="callout-title">プロンプトが貼り付けられないとき</p>
+            <p>Codex TUIでは <code>Ctrl + V</code> でのペーストが効かない場合があります。<br>右クリック、または <code>Ctrl + Shift + V</code> を使ってください。</p>
+          </div>
+        </section>
+
+        <section id="commands">
+          <h2>コマンド早見表</h2>
+
+          <h3>Claude Code CLIで使う（プラグイン）</h3>
+
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>コマンド</th>
+                  <th>用途</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td><code>/codex:setup</code></td>
+                  <td>初期設定と状態確認</td>
+                </tr>
+                <tr>
+                  <td><code>/codex:review</code></td>
+                  <td>Git差分のコードレビュー（読み取り専用）</td>
+                </tr>
+                <tr>
+                  <td><code>/codex:adversarial-review</code></td>
+                  <td>設計・方針を疑う厳しめのレビュー</td>
+                </tr>
+                <tr>
+                  <td><code>/codex:rescue</code></td>
+                  <td>調査や修正をCodexに任せる</td>
+                </tr>
+                <tr>
+                  <td><code>/codex:status</code></td>
+                  <td>バックグラウンドジョブの状態確認</td>
+                </tr>
+                <tr>
+                  <td><code>/codex:result</code></td>
+                  <td>終わったジョブの結果を表示</td>
+                </tr>
+                <tr>
+                  <td><code>/codex:cancel</code></td>
+                  <td>実行中のジョブを中止</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <h3>ターミナルで直接使う（Codex CLI）</h3>
+
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>コマンド</th>
+                  <th>用途</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td><code>codex</code></td>
+                  <td>対話モード（TUI）を起動</td>
+                </tr>
+                <tr>
+                  <td><code>codex exec "..."</code></td>
+                  <td>対話せずワンショットで実行</td>
+                </tr>
+                <tr>
+                  <td><code>codex login</code> / <code>codex logout</code></td>
+                  <td>認証と解除</td>
+                </tr>
+                <tr>
+                  <td><code>codex resume</code></td>
+                  <td>前回のセッションを開いて続きから作業</td>
+                </tr>
+                <tr>
+                  <td><code>npm i -g @openai/codex@latest</code></td>
+                  <td>最新版へ更新</td>
+                </tr>
+                <tr>
+                  <td><code>/status</code></td>
+                  <td>TUI内で使用量・状態を確認</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <section id="faq">
+          <h2>よくある疑問・注意点</h2>
+
+          <h3>レビューを自動化する「レビューゲート」は要注意</h3>
+
+          <p><code>/codex:setup --enable-review-gate</code> を実行すると、Claudeが応答を終えるたびにCodexのレビューが走るようになります。<br>指摘が出た場合は応答の終了がブロックされ、Claudeが直してから終わる流れになります。<br>便利ですが、ClaudeとCodexが延々と往復して利用量を大きく消費することがあります。<br>常時オンにはせず、様子を見ていられるときだけ有効にしてください。<br>戻すときは <code>/codex:setup --disable-review-gate</code> です。</p>
+
+          <h3>使うモデルや推論の強さを変えたい</h3>
+
+          <p>Codex側の設定ファイルで指定します。<br>全体に効かせるなら <code>~/.codex/config.toml</code>、プロジェクト単位なら <code>.codex/config.toml</code> です。</p>
+
+          <pre><code>model = "gpt-5.4-mini"
+model_reasoning_effort = "high"</code></pre>
+
+          <p>プラグインはこの設定をそのまま読みます。<br>ただしプロジェクト単位の設定は、そのプロジェクトを信頼済みにしていないと読み込まれません。</p>
+
+          <h3>Codexの続きをCodex側で作業したい</h3>
+
+          <p><code>/codex:result</code> や <code>/codex:status</code> にはセッションIDが表示されます。<br>そのIDを <code>codex resume &lt;セッションID&gt;</code> に渡すと、同じ作業をCodex側で開き直して続けられます。</p>
+
+          <h3>Codex用に別アカウントを用意する必要はある?</h3>
+
+          <p>不要です。<br>このプラグインはPCに入っているCodex CLIの認証をそのまま使うため、すでにCodexにログインしていればそのアカウントで動きます。</p>
+        </section>
+
+        <section id="links">
+          <h2>参考リンク</h2>
+
+          <ul class="link-list">
+            <li><a href="https://github.com/openai/codex-plugin-cc" target="_blank" rel="noopener">openai/codex-plugin-cc（GitHub）</a><br><span>プラグイン本体。コマンドの詳細な使い方はこのREADMEが一次情報です</span></li>
+            <li><a href="https://developers.openai.com/codex/cli/" target="_blank" rel="noopener">Codex CLI ドキュメント（OpenAI）</a><br><span>ターミナルで直接使うほうのCodexの公式ドキュメント</span></li>
+            <li><a href="https://developers.openai.com/codex/pricing" target="_blank" rel="noopener">Codex の料金・利用量（OpenAI）</a><br><span>ChatGPTのプランごとの上限はここで確認できます</span></li>
+            <li><a href="https://developers.openai.com/codex/config-reference" target="_blank" rel="noopener">Codex の設定リファレンス（OpenAI）</a><br><span>config.toml で指定できる項目の一覧</span></li>
+            <li><a href="https://developers.openai.com/api/docs/models/gpt-image-2" target="_blank" rel="noopener">gpt-image-2（OpenAI）</a><br><span>画像生成に使われるモデルの仕様</span></li>
+          </ul>
+        </section>
+      </div>
+
+      <footer class="article-footer">
+        <a href="../" class="back-link">← Tips一覧に戻る</a>
+      </footer>
+    </article>
+
+    <aside class="toc-sidebar">
+      <p class="toc-title">この記事の内容</p>
+      <ul class="toc-list">
+        <li><a href="#value">Codexを併用する価値</a></li>
+        <li><a href="#setup">セットアップ手順</a></li>
+        <li><a href="#review">活用1: 別の視点でレビューさせる</a></li>
+        <li><a href="#image">活用2: 画像を生成する</a></li>
+        <li><a href="#commands">コマンド早見表</a></li>
+        <li><a href="#faq">よくある疑問・注意点</a></li>
+        <li><a href="#links">参考リンク</a></li>
+      </ul>
+    </aside>
+  </div>
+
+  <footer class="site-footer">
+    <p>このサイトのソースは <a href="https://github.com/aoyama-webrider/ai-agent-tips" target="_blank" rel="noopener">GitHub</a> で管理しています。</p>
+  </footer>
+</body>
+</html>

@@ -1,6 +1,6 @@
 # AI Agent Tips
 
-CursorやClaude Code、Codexなどを業務で使う中で見つけた、ちょっと便利な設定・工夫をまとめたサイトです。
+Claude CodeやCodexなどのAIエージェントを業務で使う中で見つけた、ちょっと便利な設定・工夫をまとめたサイトです。
 
 ## 公開URL
 
@@ -12,9 +12,11 @@ GitHub Pagesでホスティングしています：
 ```
 ai-agent-tips/
 ├── index.html        # Tips一覧のトップページ
-├── timestamp/        # Cursor内Claude Codeのチャットに日時を表示するTips
+├── timestamp/        # IDE内Claude Codeのチャットに日時を表示するTips
 │   └── index.html
 ├── sound/            # Claude Codeの完了・許可待ちを音で知らせるTips
+│   └── index.html
+├── codex/            # Claude CodeからCodexを呼び出して使うTips
 │   └── index.html
 └── README.md
 ```
@@ -23,7 +25,7 @@ ai-agent-tips/
 
 1. ルート直下に新しいフォルダを作る（例: `git-branch/`）
 2. その中に `index.html` を置く
-3. ルートの `index.html` の `tips-list` に新しいカードを追加
+3. ルートの `index.html` の `tips-grid` に新しいカードを追加（あわせて `tips published` の件数と `Last updated` も更新）
 4. コミット・プッシュ → GitHub Pagesが自動更新
 
 ## ローカルでの確認
@@ -32,7 +34,7 @@ ai-agent-tips/
 
 ## 対象読者
 
-- Cursor / Claude Code を業務で使い始めている人
+- IDE（VS Code・Cursorなど）やターミナルでClaude Codeを使い始めている人
 - フックや設定ファイルのカスタマイズに興味がある人
 
 ## ライセンス
