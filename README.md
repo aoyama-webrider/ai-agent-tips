@@ -35,11 +35,23 @@ ai-agent-tips/
 ### 記事を書くときの約束
 
 - 本文の段落は句点改行（1文1行）にする。`<br>` を句点の後ろに入れる。箇条書き・表・コードブロックはそのまま
-- `<head>` に `<meta name="robots" content="noindex, nofollow">` を入れる
-- 想定環境は「OS/エディタ ＋ 使うツール ＋ 必要なアカウント」の順で書く
-- 表は `<div class="table-wrap">` で包む（狭い画面で表だけ横スクロールさせ、説明列が潰れるのを防ぐ）
+- 文章の途中に部分的な太字（`<strong>`）を入れない
+- `<head>` に `<meta name="robots" content="noindex, nofollow">` と `og:type` / `og:title` / `og:description` / `og:url` を入れる
+- 想定環境は「OS/エディタ ＋ 使うツール ＋ 必要なアカウント」の順で書く。前提になるもの（Node.jsのバージョン、管理者権限など）は本文の途中ではなくここに出す
+- 表は `<div class="table-wrap">` で包み、`<th scope="col">` を付ける
 - コールアウトの背景に色やグラデーションは敷かない。種類は左ボーダーと見出しの色だけで示す
-- `.callout-title` に `text-transform: uppercase` は付けない（コマンド名や ChatGPT の表記が崩れる）
+- `text-transform: uppercase` は使わない（コマンド名や ChatGPT の表記が崩れる）
+- `.article-content p` が詳細度で勝つので、段落に別のクラス（`.where` `.prompt` `.callout-title` など）を当てるときは `.article-content .xxx` と書く
+- アンカーのidは `<section>` に付ける。オフセットは `.article-content section { scroll-margin-top }` が持っている
+- 記事末尾は「関連するTips（内部リンク）」と「参考リンク（外部の一次情報）」の2節に分ける
+- 手順の場所ラベルは、コマンドを打つ手順は「実行場所」、GUIを操作する手順は「操作場所」
+
+### 技術的な内容を書くときの注意
+
+- フックのコマンドは既定でbashに渡される（WindowsでもGit Bashがあればbash経由）。`$` を含むPowerShellを1行で書くと変数が空になるので、`.ps1` ファイルに出すか、JSON内で `\\$` と書く
+- 日本語を含む `.ps1` はUTF-8 BOM付きで保存する
+- 外部サービスの仕様（プラン、モデル、コマンド一覧）は公式ドキュメントを開いて確認する。ローカルの拡張機能やプラグインの説明文は古いことがある
+- OpenAIのドキュメントは `developers.openai.com/codex/*` から `learn.chatgpt.com/docs/*` へ移っている
 
 ## ローカルでの確認
 

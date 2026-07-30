@@ -6,19 +6,23 @@
   <title>AI Agent Tips</title>
   <meta name="description" content="AIエージェント活用のTips">
   <meta name="robots" content="noindex, nofollow">
+  <meta property="og:type" content="article">
+  <meta property="og:title" content="AI Agent Tips">
+  <meta property="og:description" content="AIエージェント活用のTips">
+  <meta property="og:url" content="https://aoyama-webrider.github.io/ai-agent-tips/">
 
   <link rel="icon" type="image/png" href="favicon.png">
   <link rel="apple-touch-icon" href="favicon.png">
 
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+JP:wght@400;500;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+JP:wght@400;500;700&family=JetBrains+Mono:wght@400&display=swap" rel="stylesheet">
 
   <style>
     :root {
       --text-primary: #18181b;
       --text-secondary: #52525b;
-      --text-tertiary: #a1a1aa;
+      --text-tertiary: #71717a;
       --bg-base: #fafaf9;
       --bg-elevated: #ffffff;
       --bg-soft: #f4f4f5;
@@ -51,7 +55,6 @@
     }
 
     .site-header {
-      background: var(--bg-elevated);
       border-bottom: 1px solid var(--border-subtle);
       padding: 18px 0;
       position: sticky;
@@ -116,18 +119,6 @@
       text-align: center;
       max-width: 800px;
       margin: 0 auto;
-    }
-
-    .hero-eyebrow {
-      display: inline-block;
-      font-size: 0.78rem;
-      font-weight: 600;
-      letter-spacing: 0.04em;
-      color: var(--accent);
-      background: var(--accent-soft);
-      padding: 6px 14px;
-      border-radius: 999px;
-      margin-bottom: 24px;
     }
 
     .hero-title {
@@ -217,39 +208,6 @@
       transform: translateX(4px);
     }
 
-    .tip-card-header {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      margin-bottom: 14px;
-      gap: 16px;
-      flex-wrap: wrap;
-    }
-
-    .tip-tags {
-      display: flex;
-      gap: 6px;
-      flex-wrap: wrap;
-    }
-
-    .tip-tag {
-      font-size: 0.72rem;
-      font-weight: 600;
-      letter-spacing: 0.04em;
-      background: var(--bg-soft);
-      color: var(--text-secondary);
-      padding: 3px 10px;
-      border-radius: 4px;
-      text-transform: uppercase;
-    }
-
-    .tip-read-time {
-      font-size: 0.78rem;
-      color: var(--text-tertiary);
-      font-weight: 500;
-      white-space: nowrap;
-    }
-
     .tip-title {
       font-size: 1.25rem;
       font-weight: 700;
@@ -273,10 +231,6 @@
       padding-top: 16px;
       border-top: 1px solid var(--border-subtle);
       font-size: 0.85rem;
-    }
-
-    .tip-date {
-      color: var(--text-tertiary);
     }
 
     .tip-link-text {
@@ -317,6 +271,22 @@
       .tip-card { padding: 24px; }
       .site-nav a { margin-left: 16px; font-size: 0.85rem; }
     }
+
+    /* キーボード操作時に、どこにいるかが分かるようにする */
+    a:focus-visible {
+      outline: 2px solid var(--accent);
+      outline-offset: 2px;
+      border-radius: 2px;
+    }
+
+    /* OS側でアニメーションを控える設定にしている人には動きを出さない */
+    @media (prefers-reduced-motion: reduce) {
+      html { scroll-behavior: auto; }
+      *, *::before, *::after {
+        transition-duration: 0.01ms !important;
+        animation-duration: 0.01ms !important;
+      }
+    }
   </style>
 </head>
 <body>
@@ -344,7 +314,7 @@
     <section class="section">
       <div class="tips-grid">
         <a href="review-strategy/" class="tip-card">
-          <h3 class="tip-title">タスクの重さでAIのレビュー方法を使い分ける</h3>
+          <h2 class="tip-title">タスクの重さでAIのレビュー方法を使い分ける</h2>
           <p class="tip-desc">初回出力は下書きとして扱い、単発レビュー・ループレビュー・クロスレビューを重さで切り替える考え方。<br>そのまま使えるプロンプト例と、ループを止める条件の決め方も。</p>
           <div class="tip-footer">
             <span class="tip-link-text">読む <span class="tip-arrow">→</span></span>
@@ -352,31 +322,31 @@
         </a>
 
         <a href="ide-codex/" class="tip-card">
-          <h3 class="tip-title">VS CodeにCodexパネルを追加して、Claude Codeと並べて使う</h3>
-          <p class="tip-desc">OpenAI公式の拡張機能を入れて、Claude Codeの隣にCodexのパネルを置く手順。<br>画像生成や選択コードの受け渡しを、エディタから離れずに実行できる。</p>
+          <h2 class="tip-title">VS CodeにCodexパネルを追加して、Claude Codeと並べて使う</h2>
+          <p class="tip-desc">OpenAI公式の拡張機能を入れて、Claude Codeの隣にCodexのパネルを置く手順。<br>画像生成や選択範囲の受け渡しを、エディタから離れずに実行できる。</p>
           <div class="tip-footer">
             <span class="tip-link-text">読む <span class="tip-arrow">→</span></span>
           </div>
         </a>
 
         <a href="codex/" class="tip-card">
-          <h3 class="tip-title">Claude CodeからCodexを呼び出して、レビューと画像生成に使う</h3>
-          <p class="tip-desc">公式プラグイン codex-plugin-cc の導入手順。<br>書いた文章やコードを別の視点でレビューさせる使い方と、gpt-image-2での画像生成まで。</p>
+          <h2 class="tip-title">Claude CodeからCodexを呼び出して、レビューと画像生成に使う</h2>
+          <p class="tip-desc">OpenAI公式プラグイン codex-plugin-cc の導入手順。<br>書いた文章やコードを、別の視点でレビューさせる使い方。<br>画像生成はプラグイン経由ではできないため、ターミナルのCodexを使う手順も載せています。</p>
           <div class="tip-footer">
             <span class="tip-link-text">読む <span class="tip-arrow">→</span></span>
           </div>
         </a>
 
         <a href="sound/" class="tip-card">
-          <h3 class="tip-title">Claude Codeの「完了」「許可待ち」を音で知らせる</h3>
-          <p class="tip-desc">StopフックとPermissionRequestフックで、応答完了や権限要求のタイミングに通知音を鳴らす設定方法。<br>ながら作業の取りこぼしを防ぐ。<br>トースト通知や音声読み上げの応用も。</p>
+          <h2 class="tip-title">Claude Codeの「完了」「許可待ち」を音で知らせる</h2>
+          <p class="tip-desc">StopフックとPermissionRequestフックで、応答完了や権限要求のタイミングで通知音を鳴らす設定方法。<br>ながら作業の取りこぼしを防ぐ。<br>トースト通知や音声読み上げの応用も。</p>
           <div class="tip-footer">
             <span class="tip-link-text">読む <span class="tip-arrow">→</span></span>
           </div>
         </a>
 
         <a href="timestamp/" class="tip-card">
-          <h3 class="tip-title">IDE内のClaude Codeチャットに日時を表示する</h3>
+          <h2 class="tip-title">IDE内のClaude Codeチャットに日時を表示する</h2>
           <p class="tip-desc">標準では出ない各メッセージの送信時刻を、UserPromptSubmitフックとグローバルCLAUDE.mdの組み合わせで返信冒頭に表示させる設定方法。<br>汎用フックの応用例も。</p>
           <div class="tip-footer">
             <span class="tip-link-text">読む <span class="tip-arrow">→</span></span>
@@ -387,7 +357,7 @@
   </main>
 
   <footer class="site-footer">
-    <p>このサイトのソースは <a href="https://github.com/aoyama-webrider/ai-agent-tips" target="_blank" rel="noopener">GitHub</a> で管理しています。<br>誤りや改善案があれば issue or pull request まで。</p>
+    <p>このサイトのソースは <a href="https://github.com/aoyama-webrider/ai-agent-tips" target="_blank" rel="noopener">GitHub</a> で管理しています。<br>誤りや改善案があれば issue または pull request でお知らせください。</p>
   </footer>
 </body>
 </html>

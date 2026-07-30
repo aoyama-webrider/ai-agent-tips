@@ -6,19 +6,23 @@
   <title>Claude CodeからCodexを呼び出して、レビューと画像生成に使う — AI Agent Tips</title>
   <meta name="description" content="OpenAI公式プラグイン codex-plugin-cc でClaude CodeからCodexを呼び出す手順と、別視点でのレビュー・gpt-image-2での画像生成の使い方。">
   <meta name="robots" content="noindex, nofollow">
+  <meta property="og:type" content="article">
+  <meta property="og:title" content="Claude CodeからCodexを呼び出して、レビューと画像生成に使う — AI Agent Tips">
+  <meta property="og:description" content="OpenAI公式プラグイン codex-plugin-cc でClaude CodeからCodexを呼び出す手順と、別視点でのレビュー・gpt-image-2での画像生成の使い方。">
+  <meta property="og:url" content="https://aoyama-webrider.github.io/ai-agent-tips/codex/">
 
   <link rel="icon" type="image/png" href="../favicon.png">
   <link rel="apple-touch-icon" href="../favicon.png">
 
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+JP:wght@400;500;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+JP:wght@400;500;700&family=JetBrains+Mono:wght@400&display=swap" rel="stylesheet">
 
   <style>
     :root {
       --text-primary: #18181b;
       --text-secondary: #52525b;
-      --text-tertiary: #a1a1aa;
+      --text-tertiary: #71717a;
       --bg-base: #fafaf9;
       --bg-elevated: #ffffff;
       --bg-soft: #f4f4f5;
@@ -29,8 +33,8 @@
       --accent: #2563eb;
       --accent-soft: #dbeafe;
       --accent-hover: #1d4ed8;
-      --warn: #d97706;
-      --tip: #059669;
+      --warn: #b45309;
+      --tip: #047857;
       --radius-sm: 6px;
       --radius-md: 10px;
       --radius-lg: 16px;
@@ -166,10 +170,9 @@
       font-weight: 600;
       letter-spacing: 0.04em;
       background: var(--accent-soft);
-      color: var(--accent);
+      color: var(--accent-hover);
       padding: 3px 10px;
       border-radius: 4px;
-      text-transform: uppercase;
     }
 
     .article-title {
@@ -202,6 +205,10 @@
       margin: 56px 0 20px;
       padding-top: 8px;
       color: var(--text-primary);
+    }
+
+    /* 目次から飛んだとき、見出しが固定ヘッダーの裏に隠れないようにする（idはsection側に付いている） */
+    .article-content section {
       scroll-margin-top: 80px;
     }
 
@@ -211,6 +218,10 @@
       margin: 36px 0 14px;
       letter-spacing: -0.01em;
       color: var(--text-primary);
+      scroll-margin-top: 80px;
+    }
+
+    .article-content h3[id] {
       scroll-margin-top: 80px;
     }
 
@@ -242,6 +253,8 @@
       padding: 2px 7px;
       border-radius: 4px;
       border: 1px solid var(--border-subtle);
+      /* 区切りのない長いトークンでページが横に伸びるのを防ぐ */
+      overflow-wrap: anywhere;
     }
 
     .article-content pre {
@@ -267,7 +280,7 @@
     }
 
     /* 各手順の「どこで実行するか」を示す一行 */
-    .where {
+    .article-content .where {
       font-size: 0.82rem;
       color: var(--text-tertiary);
       margin-bottom: 14px;
@@ -298,7 +311,7 @@
     }
 
     /* コマンド名やChatGPTなどの表記が崩れるため大文字変換はしない */
-    .callout-title {
+    .article-content .callout-title {
       font-weight: 700;
       font-size: 0.9rem;
       letter-spacing: 0.01em;
@@ -526,6 +539,10 @@
       text-decoration: none;
     }
 
+    .site-footer a:hover {
+      text-decoration: underline;
+    }
+
     @media (max-width: 960px) {
       .layout {
         grid-template-columns: 1fr;
@@ -554,6 +571,22 @@
       .article-content h3 { font-size: 1.05rem; }
       .article-content .step-title { font-size: 1.05rem; }
     }
+
+    /* キーボード操作時に、どこにいるかが分かるようにする */
+    a:focus-visible {
+      outline: 2px solid var(--accent);
+      outline-offset: 2px;
+      border-radius: 2px;
+    }
+
+    /* OS側でアニメーションを控える設定にしている人には動きを出さない */
+    @media (prefers-reduced-motion: reduce) {
+      html { scroll-behavior: auto; }
+      *, *::before, *::after {
+        transition-duration: 0.01ms !important;
+        animation-duration: 0.01ms !important;
+      }
+    }
   </style>
 </head>
 <body>
@@ -570,7 +603,7 @@
   </header>
 
   <div class="layout">
-    <article class="article">
+    <main class="article">
       <p class="breadcrumb">
         <a href="../">Tips一覧</a>
         <span class="breadcrumb-sep">/</span>
@@ -581,12 +614,12 @@
         <div class="article-tags">
           <span class="article-tag">Claude Code</span>
           <span class="article-tag">Codex</span>
-          <span class="article-tag">Plugin</span>
+          <span class="article-tag">プラグイン</span>
           <span class="article-tag">画像生成</span>
         </div>
         <h1 class="article-title">Claude CodeからCodexを呼び出して、レビューと画像生成に使う</h1>
         <div class="article-meta">
-          <span class="article-meta-item">想定環境: Windows ＋ Claude Code（CLIのみ）＋ Claudeサブスク ＋ ChatGPTサブスク</span>
+          <span class="article-meta-item">想定環境: Windows ＋ Claude Code（CLI）＋ Node.js 18.18以上 ＋ Claudeサブスク ＋ ChatGPTのアカウント（初回のみ管理者権限が必要）</span>
         </div>
       </header>
 
@@ -602,18 +635,18 @@
 
           <h3>2. 画像を生成できる</h3>
 
-          <p>Codexからは gpt-image-2 で画像を生成できます。<br>資料や記事に使うカット画像を、作業を中断せずその場で用意できます。</p>
+          <p>Codexには画像生成の機能があり、資料や記事に使うカット画像をその場で用意できます。<br>ただしプラグインには画像生成用のコマンドがないため、実際に作るときはターミナルのCodexを使います。<br>手順は後半の <a href="#image">活用2</a> にまとめました。</p>
 
           <div class="callout callout-tip">
             <p class="callout-title">利用量はChatGPT側から引かれる</p>
-            <p>このプラグインは、PCに入っているCodex CLIを呼び出しているだけの仕組みです。<br>そのため使った分はChatGPT（Codex）側の利用上限を消費し、Claudeのサブスクとは別枠になります。<br>ChatGPTのサブスク（無料プランを含む）またはOpenAIのAPIキーがあれば使えます。</p>
+            <p>このプラグインは、PCに入っているCodex CLIを呼び出しているだけの仕組みです。<br>そのため使った分はChatGPT（Codex）側の利用上限を消費し、Claudeのサブスクとは別枠になります。<br>Codex自体はFreeプランを含むどのプランでも使えます（OpenAIのAPIキーでも可）。<br>ただし画像生成はFreeプランの対象外です。</p>
           </div>
         </section>
 
         <section id="setup">
           <h2>セットアップ手順</h2>
 
-          <p>所要時間は15分程度です。<br>プラグインの導入は、ターミナルで <code>claude</code> を起動したCLI版から行います（IDEに組み込まれたチャット画面ではありません）。</p>
+          <p>所要時間は15分程度です。<br>プラグインの導入は、IDEのチャット画面からもできますが、この記事ではターミナルで <code>claude</code> を起動したCLI版で進めます。<br>認証やサンドボックスの初期設定でターミナルの操作が入るため、そのほうが手順どおりに進めやすいからです。</p>
 
           <div class="callout callout-warn">
             <p class="callout-title">この手順は自分で進めるのが確実</p>
@@ -674,7 +707,7 @@
 
             <pre><code>/reload-plugins</code></pre>
 
-            <p>正常に進むと <code>Reloaded: 1 plugin · 7 skills · 6 agents · 3 hooks</code> のような表示が出ます。<br>数字はプラグインの更新で変わるので、エラーが出ていなければ問題ありません。</p>
+            <p>正常に進むと、読み込んだプラグイン・スキル・エージェント・フックの数が表示されます。<br>数はプラグインの更新で変わるので、エラーが出ていなければ問題ありません。</p>
           </div>
 
           <div class="step">
@@ -695,7 +728,7 @@
               <li>ChatGPTアカウントでのログイン状態の確認</li>
             </ul>
 
-            <p>インストールは内部で <code>npm install -g @openai/codex</code> が実行されます。<br>そのためNode.js 18.18以上が必要です。</p>
+            <p>インストール時には、内部で <code>npm install -g @openai/codex</code> が実行されます。<br>そのためNode.jsとnpmが必要です。<br>プラグイン側の要件はNode.js 18.18以上なので、先に <code>node --version</code> で確認しておくと途中で止まりません。</p>
           </div>
 
           <div class="step">
@@ -731,11 +764,16 @@
 
             <ol>
               <li>「1. Set up default sandbox」を選んでEnterを押す</li>
-              <li>Windowsの管理者権限の確認ダイアログ（UAC）が出る</li>
+              <li>Windowsの管理者権限の確認ダイアログ（UAC）が出るので、プログラム名と発行元を確認する</li>
               <li>「はい」をクリックする</li>
             </ol>
 
-            <p>1を選ぶと、Codexが実行するコマンドをOSの機能で隔離した状態で動かせます。<br>2はその隔離が弱く、外部から不正な指示を読み込んだ場合の影響が大きくなります。<br>管理者権限を求められるのは最初の設定時だけなので、1を選んでおくのがおすすめです。</p>
+            <p>選択肢1を選ぶと、Codexが実行するコマンドをOSの機能で隔離した状態で動かせます。<br>選択肢2はその隔離が弱く、外部から不正な指示を読み込んだ場合の影響が大きくなります。<br>管理者権限を求められるのは最初の設定時だけなので、通常は選択肢1を選んでください。</p>
+
+            <div class="callout callout-warn">
+              <p class="callout-title">会社の管理端末では先に確認する</p>
+              <p>この初期設定では、ローカルユーザーとグループの作成、ファイアウォールの設定などが行われます。<br>組織のポリシーで制限されていると失敗します。<br>管理端末で使う場合は、実行前にIT部門へ可否を確認してください。<br>確認が取れるまでは、権限昇格が不要な選択肢2で試すこともできます。</p>
+            </div>
           </div>
         </section>
 
@@ -765,8 +803,8 @@
             <table>
               <thead>
                 <tr>
-                  <th>コマンド</th>
-                  <th>何をするか</th>
+                  <th scope="col">コマンド</th>
+                  <th scope="col">何をするか</th>
                 </tr>
               </thead>
               <tbody>
@@ -786,7 +824,7 @@
             </table>
           </div>
 
-          <p>どちらも読み取り専用で、コードは書き換えません。<br>ファイル数が多いと時間がかかるので、<code>--background</code> を付けて裏で走らせるのが現実的です。</p>
+          <p>いずれも読み取り専用で、コードは書き換えません。<br>ファイル数が多いと時間がかかるので、<code>--background</code> を付けて裏で走らせるのが現実的です。</p>
 
           <pre><code>/codex:review --background
 /codex:status
@@ -803,7 +841,7 @@
         <section id="image">
           <h2>活用2: 画像を生成する</h2>
 
-          <p>Codexからは gpt-image-2 で画像を生成できます。<br>ただしプラグインには画像生成用のコマンドがなく、Claude Code経由での生成は現状できません。<br>画像を作るときは、ターミナルで <code>codex</code> を直接起動します。</p>
+          <p>プラグインには画像生成用のコマンドがありません。<br>そのため確実に呼び出したいときは、ターミナルで <code>codex</code> を直接起動します。<br>VS Codeを使っているなら、<a href="../ide-codex/">Codexのパネルを追加する</a>ほうがターミナルへの切り替えも不要になります。</p>
 
           <div class="step">
             <div class="step-header">
@@ -828,7 +866,7 @@
 
             <pre><code>日本人の男性会社員の写真を生成</code></pre>
 
-            <p>画像生成の機能を明示的に呼び出したい場合は、依頼文の末尾に <code>$imagegen</code> を付けます。</p>
+            <p>画像生成の機能を明示的に呼び出したい場合は、依頼文に <code>$imagegen</code> を含めます。<br>位置は先頭でも末尾でもかまいません。</p>
           </div>
 
           <div class="step">
@@ -841,12 +879,12 @@
 
             <pre><code>file:///C:/Users/&lt;ユーザー名&gt;/.codex/generated_images/019dffc6-.../ig_xxxxx.png</code></pre>
 
-            <p>Codex側に保存先を指定するオプションはありません。<br>生成後に、プロジェクトのフォルダへコピーまたは移動して使ってください。</p>
+            <p>保存先を指定しなければ、Codexの作業フォルダに置かれたままになります。<br>依頼文に「プロジェクトの <code>public/images/</code> に保存して」のように書けば、Codexがそこへ移してくれます。<br>プロジェクトから参照する画像は、作業フォルダに置いたままにしないでください。</p>
           </div>
 
           <div class="callout callout-warn">
             <p class="callout-title">プロンプトが貼り付けられないとき</p>
-            <p>Codex TUIでは <code>Ctrl + V</code> でのペーストが効かない場合があります。<br>右クリック、または <code>Ctrl + Shift + V</code> を使ってください。</p>
+            <p>Codex TUIは <code>Ctrl + V</code> を画像の貼り付けに割り当てています。<br>そのため文字を貼り付けたいときは効かないことがあります。<br>その場合は右クリック、またはターミナル側の貼り付け操作（Windows Terminalなら <code>Ctrl + Shift + V</code>）を使ってください。</p>
           </div>
         </section>
 
@@ -859,8 +897,8 @@
             <table>
               <thead>
                 <tr>
-                  <th>コマンド</th>
-                  <th>用途</th>
+                  <th scope="col">コマンド</th>
+                  <th scope="col">用途</th>
                 </tr>
               </thead>
               <tbody>
@@ -902,8 +940,8 @@
             <table>
               <thead>
                 <tr>
-                  <th>コマンド</th>
-                  <th>用途</th>
+                  <th scope="col">コマンド</th>
+                  <th scope="col">用途</th>
                 </tr>
               </thead>
               <tbody>
@@ -929,7 +967,7 @@
                 </tr>
                 <tr>
                   <td><code>/status</code></td>
-                  <td>TUI内で使用量・状態を確認</td>
+                  <td>TUI内で利用量・状態を確認</td>
                 </tr>
               </tbody>
             </table>
@@ -950,25 +988,34 @@
           <pre><code>model = "gpt-5.4-mini"
 model_reasoning_effort = "high"</code></pre>
 
-          <p>プラグインはこの設定をそのまま読みます。<br>ただしプロジェクト単位の設定は、そのプロジェクトを信頼済みにしていないと読み込まれません。</p>
+          <p>プラグインはこの設定をそのまま読みます。<br>ただしプロジェクト単位の設定は、そのプロジェクトを信頼済み（Codexがそのフォルダを安全と認識している状態）にしていないと読み込まれません。</p>
 
           <h3>Codexの続きをCodex側で作業したい</h3>
 
           <p><code>/codex:result</code> や <code>/codex:status</code> にはセッションIDが表示されます。<br>そのIDを <code>codex resume &lt;セッションID&gt;</code> に渡すと、同じ作業をCodex側で開き直して続けられます。</p>
 
-          <h3>Codex用に別アカウントを用意する必要はある?</h3>
+          <h3>Codex用に別アカウントを用意する必要はあるか</h3>
 
           <p>不要です。<br>このプラグインはPCに入っているCodex CLIの認証をそのまま使うため、すでにCodexにログインしていればそのアカウントで動きます。</p>
+        </section>
+
+        <section id="related">
+          <h2>関連するTips</h2>
+
+          <ul class="link-list">
+            <li><a href="../ide-codex/">VS CodeにCodexパネルを追加して、Claude Codeと並べて使う</a><br><span>もう一方の方式。画像生成をエディタ内で完結させたいときはこちら</span></li>
+            <li><a href="../review-strategy/">タスクの重さでAIのレビュー方法を使い分ける</a><br><span>レビューをどこまで厚くするかの判断と、そのまま使えるプロンプト例</span></li>
+          </ul>
         </section>
 
         <section id="links">
           <h2>参考リンク</h2>
 
           <ul class="link-list">
-            <li><a href="https://github.com/openai/codex-plugin-cc" target="_blank" rel="noopener">openai/codex-plugin-cc（GitHub）</a><br><span>プラグイン本体。コマンドの詳細な使い方はこのREADMEが一次情報です</span></li>
-            <li><a href="https://developers.openai.com/codex/cli/" target="_blank" rel="noopener">Codex CLI ドキュメント（OpenAI）</a><br><span>ターミナルで直接使うほうのCodexの公式ドキュメント</span></li>
-            <li><a href="https://developers.openai.com/codex/pricing" target="_blank" rel="noopener">Codex の料金・利用量（OpenAI）</a><br><span>ChatGPTのプランごとの上限はここで確認できます</span></li>
-            <li><a href="https://developers.openai.com/codex/config-reference" target="_blank" rel="noopener">Codex の設定リファレンス（OpenAI）</a><br><span>config.toml で指定できる項目の一覧</span></li>
+            <li><a href="https://github.com/openai/codex-plugin-cc" target="_blank" rel="noopener">openai/codex-plugin-cc（GitHub）</a><br><span>プラグイン本体。コマンドは版によって増えることがあるので、最新の一覧はこのREADMEで確認してください</span></li>
+            <li><a href="https://learn.chatgpt.com/docs/codex/cli" target="_blank" rel="noopener">Codex CLI ドキュメント（OpenAI）</a><br><span>ターミナルで直接使うほうのCodexの公式ドキュメント</span></li>
+            <li><a href="https://learn.chatgpt.com/docs/pricing" target="_blank" rel="noopener">Codex の料金・利用量（OpenAI）</a><br><span>ChatGPTのプランごとの上限はここで確認できます</span></li>
+            <li><a href="https://learn.chatgpt.com/docs/config-file/config-reference" target="_blank" rel="noopener">Codex の設定リファレンス（OpenAI）</a><br><span>config.toml で指定できる項目の一覧</span></li>
             <li><a href="https://developers.openai.com/api/docs/models/gpt-image-2" target="_blank" rel="noopener">gpt-image-2（OpenAI）</a><br><span>画像生成に使われるモデルの仕様</span></li>
           </ul>
         </section>
@@ -977,9 +1024,9 @@ model_reasoning_effort = "high"</code></pre>
       <footer class="article-footer">
         <a href="../" class="back-link">← Tips一覧に戻る</a>
       </footer>
-    </article>
+    </main>
 
-    <aside class="toc-sidebar">
+    <nav class="toc-sidebar" aria-label="この記事の内容">
       <p class="toc-title">この記事の内容</p>
       <ul class="toc-list">
         <li><a href="#value">Codexを併用する価値</a></li>
@@ -988,9 +1035,10 @@ model_reasoning_effort = "high"</code></pre>
         <li><a href="#image">活用2: 画像を生成する</a></li>
         <li><a href="#commands">コマンド早見表</a></li>
         <li><a href="#faq">よくある疑問・注意点</a></li>
+        <li><a href="#related">関連するTips</a></li>
         <li><a href="#links">参考リンク</a></li>
       </ul>
-    </aside>
+    </nav>
   </div>
 
   <footer class="site-footer">

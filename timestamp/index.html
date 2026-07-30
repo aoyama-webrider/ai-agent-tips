@@ -6,19 +6,23 @@
   <title>IDE内のClaude Codeチャットに日時を表示する — AI Agent Tips</title>
   <meta name="description" content="標準では出ない各メッセージの送信時刻を、UserPromptSubmitフックとグローバルCLAUDE.mdで返信冒頭に表示させる設定方法">
   <meta name="robots" content="noindex, nofollow">
+  <meta property="og:type" content="article">
+  <meta property="og:title" content="IDE内のClaude Codeチャットに日時を表示する — AI Agent Tips">
+  <meta property="og:description" content="標準では出ない各メッセージの送信時刻を、UserPromptSubmitフックとグローバルCLAUDE.mdで返信冒頭に表示させる設定方法">
+  <meta property="og:url" content="https://aoyama-webrider.github.io/ai-agent-tips/timestamp/">
 
   <link rel="icon" type="image/png" href="../favicon.png">
   <link rel="apple-touch-icon" href="../favicon.png">
 
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+JP:wght@400;500;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+JP:wght@400;500;700&family=JetBrains+Mono:wght@400&display=swap" rel="stylesheet">
 
   <style>
     :root {
       --text-primary: #18181b;
       --text-secondary: #52525b;
-      --text-tertiary: #a1a1aa;
+      --text-tertiary: #71717a;
       --bg-base: #fafaf9;
       --bg-elevated: #ffffff;
       --bg-soft: #f4f4f5;
@@ -29,8 +33,8 @@
       --accent: #2563eb;
       --accent-soft: #dbeafe;
       --accent-hover: #1d4ed8;
-      --warn: #d97706;
-      --tip: #059669;
+      --warn: #b45309;
+      --tip: #047857;
       --radius-sm: 6px;
       --radius-md: 10px;
       --radius-lg: 16px;
@@ -166,10 +170,9 @@
       font-weight: 600;
       letter-spacing: 0.04em;
       background: var(--accent-soft);
-      color: var(--accent);
+      color: var(--accent-hover);
       padding: 3px 10px;
       border-radius: 4px;
-      text-transform: uppercase;
     }
 
     .article-title {
@@ -202,6 +205,10 @@
       margin: 56px 0 20px;
       padding-top: 8px;
       color: var(--text-primary);
+    }
+
+    /* 目次から飛んだとき、見出しが固定ヘッダーの裏に隠れないようにする（idはsection側に付いている） */
+    .article-content section {
       scroll-margin-top: 80px;
     }
 
@@ -211,6 +218,10 @@
       margin: 36px 0 14px;
       letter-spacing: -0.01em;
       color: var(--text-primary);
+      scroll-margin-top: 80px;
+    }
+
+    .article-content h3[id] {
       scroll-margin-top: 80px;
     }
 
@@ -242,6 +253,8 @@
       padding: 2px 7px;
       border-radius: 4px;
       border: 1px solid var(--border-subtle);
+      /* 区切りのない長いトークンでページが横に伸びるのを防ぐ */
+      overflow-wrap: anywhere;
     }
 
     .article-content pre {
@@ -286,7 +299,7 @@
     }
 
     /* コマンド名やChatGPTなどの表記が崩れるため大文字変換はしない */
-    .callout-title {
+    .article-content .callout-title {
       font-weight: 700;
       font-size: 0.9rem;
       letter-spacing: 0.01em;
@@ -357,6 +370,22 @@
       box-shadow: var(--shadow-sm);
     }
 
+    /* 画面が狭いときは表だけを横スクロールさせ、ページ全体は横に伸ばさない */
+    .table-wrap {
+      overflow-x: auto;
+      margin: 20px 0 28px;
+      border-radius: var(--radius-md);
+      box-shadow: var(--shadow-sm);
+    }
+
+    .table-wrap table {
+      margin: 0;
+      box-shadow: none;
+      border-radius: 0;
+      /* これ以下には縮めず、狭い画面では横スクロールに切り替える */
+      min-width: 480px;
+    }
+
     table {
       width: 100%;
       border-collapse: collapse;
@@ -387,10 +416,34 @@
       border-bottom: none;
     }
 
+    .link-list {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+    }
+
+    .link-list li {
+      margin-bottom: 10px;
+    }
+
+    .link-list a {
+      color: var(--accent);
+      text-decoration: none;
+      font-weight: 500;
+    }
+
+    .link-list a:hover {
+      text-decoration: underline;
+    }
+
+    .link-list span {
+      color: var(--text-tertiary);
+      font-size: 0.88rem;
+    }
+
     .toc-sidebar {
       position: sticky;
       top: 100px;
-      align-self: start;
     }
 
     .toc-title {
@@ -468,6 +521,10 @@
       text-decoration: none;
     }
 
+    .site-footer a:hover {
+      text-decoration: underline;
+    }
+
     @media (max-width: 960px) {
       .layout {
         grid-template-columns: 1fr;
@@ -496,6 +553,22 @@
       .article-content h3 { font-size: 1.05rem; }
       .article-content .step-title { font-size: 1.05rem; }
     }
+
+    /* キーボード操作時に、どこにいるかが分かるようにする */
+    a:focus-visible {
+      outline: 2px solid var(--accent);
+      outline-offset: 2px;
+      border-radius: 2px;
+    }
+
+    /* OS側でアニメーションを控える設定にしている人には動きを出さない */
+    @media (prefers-reduced-motion: reduce) {
+      html { scroll-behavior: auto; }
+      *, *::before, *::after {
+        transition-duration: 0.01ms !important;
+        animation-duration: 0.01ms !important;
+      }
+    }
   </style>
 </head>
 <body>
@@ -512,7 +585,7 @@
   </header>
 
   <div class="layout">
-    <article class="article">
+    <main class="article">
       <p class="breadcrumb">
         <a href="../">Tips一覧</a>
         <span class="breadcrumb-sep">/</span>
@@ -536,11 +609,11 @@
         <section id="problem">
           <h2>なぜ日時表示が必要なのか</h2>
 
-          <p>IDE内のClaude Codeチャットでは、各メッセージの送信時刻が画面に出ません。<br>少し前のやり取りを遡るときに <strong>「これいつの会話だっけ？」</strong> が分からず、作業の経過や時系列が把握しづらくなります。</p>
+          <p>IDE内のClaude Codeチャットでは、各メッセージの送信時刻が画面に出ません。<br>少し前のやり取りを遡るときに、それがいつの会話だったのか分からず、作業の経過や時系列が把握しづらくなります。</p>
 
-          <p>Claude Code本体には <code>showMessageTimestamps</code> という設定がありますが、IDE拡張機能のチャットUIはこの設定を読みません（IDEがUIを独自に描画しているため）。<br>なので設定を <code>true</code> にしても効きません。</p>
+          <p>Claude Code本体には <code>showMessageTimestamps</code> という設定がありますが、IDE拡張機能のチャットUIはこの設定を読みません（IDEがUIを独自に描画しているため）。<br>そのため、設定を <code>true</code> にしても効きません。</p>
 
-          <p>そこで「<strong>Claudeに毎回時刻を伝えて、返信の冒頭に文字として書いてもらう</strong>」運用にします。<br>UI実装に依存せず、チャット履歴に時刻が確実に残ります。</p>
+          <p>そこで「Claudeに毎回時刻を伝えて、返信の冒頭に文字として書いてもらう」運用にします。<br>UI実装に依存せず、チャット履歴に時刻が確実に残ります。</p>
         </section>
 
         <section id="mechanism">
@@ -568,13 +641,18 @@
 
           <div class="callout callout-tip">
             <p class="callout-title">最短ルート: AIエージェントに任せる</p>
-            <p>手作業が不安なら、Claude Codeに<strong>このページのURLを渡して</strong>、次のように頼むだけでOKです。<br><code>settings.json</code> と グローバル <code>CLAUDE.md</code> の両方をAIが編集してくれます。</p>
+            <p>手作業が不安なら、Claude CodeにこのページのURLを渡して、次のように頼むだけでOKです。<br><code>settings.json</code> とグローバル <code>CLAUDE.md</code> の両方をAIが編集してくれます。</p>
             <pre><code>https://aoyama-webrider.github.io/ai-agent-tips/timestamp/
 ↑このページのとおり、私の環境に日時表示の設定を反映して。
 ・settings.json の hooks と グローバル CLAUDE.md の両方を設定して
 ・既存の設定は壊さず、マージして（上書きしない）
-・終わったら、反映に再読み込み（/hooks を開き直す or 再起動）が必要か教えて</code></pre>
-            <p><strong>想定環境</strong>: Windows ＋ Claude Code（IDE拡張のみ）＋ Claudeサブスク。<br>この前提なら、ほぼそのまま再現できます。<br>ただし<strong>最後の再読み込み（<code>/hooks</code> を開き直す or 再起動）だけは手動</strong>です。</p>
+・終わったら、反映に再読み込み（/hooks を開き直す、または再起動）が必要か教えて</code></pre>
+            <p>この前提なら、ほぼそのまま再現できます。<br>ただし最後の再読み込み（<code>/hooks</code> を開き直す、または再起動）だけは手動です。</p>
+          </div>
+
+          <div class="callout callout-warn">
+            <p class="callout-title">反映する前に、追加される内容を見せてもらう</p>
+            <p>フックのコマンドは、あなたの権限でそのまま実行されます。<br>つまりWebページの内容をAIに読ませてフックに反映させる手順は、外部のページを設定の元ネタにする行為です。<br>ページが書き換えられていた場合、以降の全セッションで意図しないコマンドが動くことになります。<br>依頼するときは「反映する前に、追加する差分と実行されるコマンドを見せて」と付け加えてください。<br>内容を自分の目で確認してから許可するのが安全です。</p>
           </div>
 
           <p>仕組みを理解しながら自分で設定したい人向けに、手順も載せておきます（所要時間 5〜10分・Windows/PowerShell前提）。<br>Mac/Linuxの場合は <a href="#faq">注意点セクション</a> を参照してください。</p>
@@ -587,7 +665,7 @@
 
             <p>ファイル: <code>C:\Users\&lt;ユーザー名&gt;\.claude\settings.json</code></p>
 
-            <p><code>hooks</code> オブジェクトの中に、以下のブロックを追加します。<br><strong>すでに <code>hooks</code> がある場合は中身を消さずにマージ</strong>してください（他のフックがあれば、それらを残したまま <code>UserPromptSubmit</code> を足す）。</p>
+            <p><code>hooks</code> オブジェクトの中に、以下のブロックを追加します。<br>すでに <code>hooks</code> がある場合は中身を消さずにマージしてください（他のフックがあれば、それらを残したまま <code>UserPromptSubmit</code> を足す）。</p>
 
             <pre><code>{
   "hooks": {
@@ -607,32 +685,19 @@
 
             <div class="callout callout-warn">
               <p class="callout-title">Encoding注意</p>
-              <p><code>[Console]::OutputEncoding = [System.Text.Encoding]::UTF8;</code> がないと日本語が文字化けします。<br>PowerShellのデフォルト出力エンコーディングがShift-JISのため、ここでUTF-8に切り替える必要があります。</p>
+              <p><code>[Console]::OutputEncoding = [System.Text.Encoding]::UTF8;</code> がないと日本語が文字化けします。<br>Windowsのコンソール出力はCP932（Shift-JIS系）が既定のため、ここでUTF-8に切り替えておく必要があります。</p>
             </div>
           </div>
 
           <div class="step">
             <div class="step-header">
               <span class="step-num">2</span>
-              <h3 class="step-title">設定を反映する</h3>
-            </div>
-
-            <p>以下のいずれかでフックを読み込ませます：</p>
-            <ul>
-              <li>Claude Codeのチャット内で <code>/hooks</code> を一度開いて閉じる（設定が再読み込みされる）</li>
-              <li>Claude Codeを再起動する</li>
-            </ul>
-          </div>
-
-          <div class="step">
-            <div class="step-header">
-              <span class="step-num">3</span>
               <h3 class="step-title">グローバルCLAUDE.mdにルールを追加</h3>
             </div>
 
             <p>ファイル: <code>C:\Users\&lt;ユーザー名&gt;\.claude\CLAUDE.md</code></p>
 
-            <p>このファイルは全プロジェクトで読み込まれるグローバルな指示書です。<br>以下のセクションを追加します：</p>
+            <p>このファイルは全プロジェクトで読み込まれるグローバルな指示書です。<br>以下のセクションを追加します。</p>
 
             <pre><code>## 返信フォーマット
 - 各返信の冒頭に、現在の日時を `YYYY-MM-DD HH:mm (曜日略)` 形式で1行記載する（例: `2026-05-11 15:06 (月)`）
@@ -643,7 +708,25 @@
 
             <div class="callout callout-tip">
               <p class="callout-title">グローバルCLAUDE.mdが効くわけ</p>
-              <p>プロジェクト別の <code>CLAUDE.md</code> や記憶ファイル（メモリ）に書くと、そのフォルダで開いたセッションでしか効きません。<br>複数フォルダで使いたい場合は <strong>必ずグローバルCLAUDE.md に書く</strong> ようにしてください。</p>
+              <p>プロジェクト別の <code>CLAUDE.md</code> に書くと、そのフォルダで開いたセッションでしか効きません。<br>複数フォルダで使いたい場合は、必ずグローバルCLAUDE.mdに書いてください。</p>
+            </div>
+          </div>
+
+          <div class="step">
+            <div class="step-header">
+              <span class="step-num">3</span>
+              <h3 class="step-title">設定を反映する</h3>
+            </div>
+
+            <p>ここまでの2つを保存したら、以下のいずれかで読み込ませます。</p>
+            <ul>
+              <li>Claude Codeを再起動する（確実）</li>
+              <li>チャット内で <code>/hooks</code> を一度開いて閉じる（フック設定だけが再読み込みされる）</li>
+            </ul>
+
+            <div class="callout callout-warn">
+              <p class="callout-title">CLAUDE.mdの編集はこの前に済ませる</p>
+              <p>グローバル <code>CLAUDE.md</code> はセッションの開始時に読み込まれます。<br>再起動したあとに編集しても、そのセッションには反映されません。<br>先にフックとCLAUDE.mdの両方を保存してから、この手順に進んでください。</p>
             </div>
           </div>
 
@@ -653,13 +736,13 @@
               <h3 class="step-title">動作確認</h3>
             </div>
 
-            <p>Claude Codeに何かメッセージを送ってみてください。<br>返信が次のように始まれば成功です：</p>
+            <p>Claude Codeに何かメッセージを送ってみてください。<br>返信が次のように始まれば成功です。</p>
 
             <pre><code>2026-05-11 15:06 (月)
 
 （ここから返信本文）</code></pre>
 
-            <p>日時が出ない場合は次の項目をチェック：</p>
+            <p>日時が出ない場合は次の項目をチェック。</p>
             <ul>
               <li>settings.json のJSON構文が壊れていないか（カンマの抜けに注意）</li>
               <li>フックがロードされているか（<code>/hooks</code> を開いて確認できる）</li>
@@ -673,7 +756,7 @@
           <h2>よくある疑問・注意点</h2>
 
           <h3>Mac / Linux の場合</h3>
-          <p>PowerShellの代わりにシェルコマンドでフックを書きます。<br><code>command</code> の中身をたとえば以下のように差し替えてください：</p>
+          <p>PowerShellの代わりにシェルコマンドでフックを書きます。<br><code>command</code> の中身をたとえば以下のように差し替えてください。</p>
           <pre><code>"command": "echo \"{\\\"hookSpecificOutput\\\":{\\\"hookEventName\\\":\\\"UserPromptSubmit\\\",\\\"additionalContext\\\":\\\"現在の日時: $(date '+%Y-%m-%d %H:%M:%S (%a)')\\\"}}\""</code></pre>
 
           <h3>表示をやめたいとき</h3>
@@ -685,136 +768,170 @@
           <h3>秒単位まで表示したい場合</h3>
           <p>CLAUDE.md のフォーマット指定を <code>YYYY-MM-DD HH:mm:ss (曜日)</code> に変えるだけです。<br>フック側は元から秒まで取得しています。</p>
 
-          <h3>タイムゾーン</h3>
-          <p>PCのローカル時刻が使われます。<br>海外出張や時差のある作業環境では <code>Get-Date</code> がローカル時刻を返すので、JSTを明示したい場合はフォーマットに <code>K</code>（タイムゾーンオフセット）を追加します。</p>
+          <h3>タイムゾーンはどう扱われるか</h3>
+          <p><code>Get-Date</code> はPCのローカル時刻を返します。<br>海外出張などでJSTを明示したい場合は、フォーマットに <code>K</code>（タイムゾーンオフセット）を追加します。</p>
 
-          <h3>IDE内蔵AI（Composer/Chat）には効かない</h3>
-          <p>このフックはClaude Codeプラグイン専用です。<br>IDE内蔵のAI機能（Cmd+K、Composer、Chat）はAnthropicとは別のAPI経路で動いているため、この設定の影響を受けません。</p>
+          <h3>IDE内蔵のAI機能には効かない</h3>
+          <p>このフックはClaude Codeプラグイン専用です。<br>IDE内蔵のAI機能（インラインチャットなど）はAnthropicとは別のAPI経路で動いているため、この設定の影響を受けません。</p>
 
           <h3>ワークスペース別の記憶（メモリ）と併用するとき</h3>
-          <p>記憶ファイル（<code>~/.claude/projects/&lt;sanitized-cwd&gt;/memory/</code>）に同じルールを書いても効きますが、ワークスペース単位の効力範囲なので注意。<br><strong>全セッション共通にしたいルールはグローバルCLAUDE.mdへ</strong> が原則です。</p>
+          <p>記憶ファイル（<code>~/.claude/projects/&lt;sanitized-cwd&gt;/memory/</code>）に同じルールを書いても効きますが、ワークスペース単位の効力範囲なので注意が必要です。<br>全セッション共通にしたいルールはグローバルCLAUDE.mdへ が原則です。</p>
         </section>
 
         <section id="applications">
-          <h2>UserPromptSubmitフックの汎用活用例</h2>
+          <h2>UserPromptSubmitフックの活用例</h2>
 
           <p>このフックは「ユーザーがメッセージを送るたびに、Claudeに渡すコンテキストを動的に追加できる窓口」として汎用的に使えます。<br>日時表示はその一例にすぎません。</p>
 
-          <h3>応用アイディア</h3>
+          <h3>応用アイデア</h3>
 
-          <table>
-            <thead>
-              <tr>
-                <th>注入する情報</th>
-                <th>使いどころ</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr>
-                <td>現在のGitブランチ名</td>
-                <td>「いまどのブランチで作業しているか」をClaudeが自動把握。ブランチ切り替え時の混乱を防げる</td>
-              </tr>
-              <tr>
-                <td>カレンダーの次の予定までの時間</td>
-                <td>「あと20分でMTGなので、簡潔に」とClaude側が配慮できる</td>
-              </tr>
-              <tr>
-                <td>バッテリー残量</td>
-                <td>ノートPCの外出作業時。残量少ないと手短にまとめてくれる</td>
-              </tr>
-              <tr>
-                <td>未読Slack件数</td>
-                <td>割り込み状況の把握。集中作業中なら通知をミュート、など</td>
-              </tr>
-              <tr>
-                <td>天気・気温</td>
-                <td>外出予定の判断、雑談の話題</td>
-              </tr>
-              <tr>
-                <td>直近の作業ログ要約</td>
-                <td>長時間セッションで「さっきまで何やってたっけ」を防ぐ</td>
-              </tr>
-            </tbody>
-          </table>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th scope="col">注入する情報</th>
+                  <th scope="col">使いどころ</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>現在のGitブランチ名</td>
+                  <td>「いまどのブランチで作業しているか」をClaudeが自動把握。ブランチ切り替え時の混乱を防げる</td>
+                </tr>
+                <tr>
+                  <td>カレンダーの次の予定までの時間</td>
+                  <td>「あと20分でMTGなので、簡潔に」とClaude側が配慮できる</td>
+                </tr>
+                <tr>
+                  <td>バッテリー残量</td>
+                  <td>ノートPCの外出作業時。残量が少ないと手短にまとめてくれる</td>
+                </tr>
+                <tr>
+                  <td>未読Slack件数</td>
+                  <td>割り込み状況の把握。集中作業中なら通知をミュート、など</td>
+                </tr>
+                <tr>
+                  <td>天気・気温</td>
+                  <td>外出予定の判断、雑談の話題</td>
+                </tr>
+                <tr>
+                  <td>直近の作業ログ要約</td>
+                  <td>長時間セッションで「さっきまで何やってたっけ」を防ぐ</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
 
           <h3>実装パターン</h3>
 
-          <p>例えばGitブランチを注入する場合：</p>
+          <p>この記事の日時のフックには変数（<code>$</code>）が出てきません。<br>いっぽう、Gitブランチのように途中の値を変数に入れる処理では、1行で書くと壊れます。<br>理由は次の注意にまとめました。</p>
 
-          <pre><code>"command": "powershell.exe -NoProfile -Command \"[Console]::OutputEncoding = [System.Text.Encoding]::UTF8; $branch = (git branch --show-current 2&gt;$null); if (-not $branch) { $branch = 'no-git' }; @{hookSpecificOutput=@{hookEventName='UserPromptSubmit';additionalContext=('現在のブランチ: ' + $branch)}} | ConvertTo-Json -Compress\""</code></pre>
+          <div class="callout callout-warn">
+            <p class="callout-title">フックのコマンドに $ を直接書かない</p>
+            <p>フックのコマンドは、既定でbashに渡されます（Windowsでも、Git Bashが入っていればbash経由になります）。<br>そのため <code>$branch</code> のような変数をそのまま書くと、bashが先に展開して空になり、PowerShellには届きません。<br><code>2&gt;$null</code> も <code>2&gt;</code> だけになり、構文エラーになります。<br>回避策は2つあります。<br>1つは、JSON内で <code>\\$branch</code> と書いて、PowerShellに <code>$</code> を渡す方法です。<br>もう1つは、処理を <code>.ps1</code> ファイルに出して、フックからはそれを呼ぶ方法です。<br>行数が増えるものは後者が確実です。</p>
+          </div>
+
+          <p>1行で書く場合は、<code>$</code> を <code>\\$</code> にします。</p>
+
+          <pre><code>"command": "powershell.exe -NoProfile -Command \"[Console]::OutputEncoding = [System.Text.Encoding]::UTF8; \\$branch = (git branch --show-current 2&gt;\\$null); if (-not \\$branch) { \\$branch = 'no-git' }; @{hookSpecificOutput=@{hookEventName='UserPromptSubmit';additionalContext=('現在のブランチ: ' + \\$branch)}} | ConvertTo-Json -Compress\""</code></pre>
 
           <h3>複数の情報を1つのフックでまとめて渡す</h3>
 
-          <p>フックを複数登録する代わりに、1つのフック内で複数の情報をまとめて <code>additionalContext</code> に入れる書き方が推奨です。<br>フックが多いとセッション起動・各メッセージごとに余分なプロセスが立ち上がるため。</p>
+          <p>フックを複数登録する代わりに、1つのフック内で複数の情報をまとめて <code>additionalContext</code> に入れる書き方が推奨です。<br>フックが多いと、セッション開始時や各メッセージごとに余分なプロセスが立ち上がるためです。</p>
+
+          <p>ここまで長くなると1行では書きにくいので、<code>.ps1</code> ファイルにします。</p>
+
+          <p>ファイル: <code>C:\Users\&lt;ユーザー名&gt;\.claude\context.ps1</code></p>
 
           <pre><code>$dt = Get-Date -Format 'yyyy-MM-dd HH:mm (dddd)'
 $branch = (git branch --show-current 2&gt;$null)
 $ctx = "現在の日時: $dt`n現在のブランチ: $branch"
 @{hookSpecificOutput=@{hookEventName='UserPromptSubmit';additionalContext=$ctx}} | ConvertTo-Json -Compress</code></pre>
 
+          <p>フック側は、このファイルを呼ぶだけにします。</p>
+
+          <pre><code>"command": "powershell.exe -NoProfile -File \"C:\\Users\\&lt;ユーザー名&gt;\\.claude\\context.ps1\""</code></pre>
+
+          <div class="callout callout-warn">
+            <p class="callout-title">日本語を含む .ps1 はUTF-8 BOM付きで保存する</p>
+            <p>上の <code>.ps1</code> には日本語が入っています。<br>BOMなしのUTF-8で保存すると、Windows PowerShellが別の文字コードとして読み、文字化けや構文エラーになります。<br>エディタの保存形式を「UTF-8 with BOM」にしてください。</p>
+          </div>
+
           <h3>他のフックイベント</h3>
 
-          <p><code>UserPromptSubmit</code> 以外にも、Claude Codeにはさまざまなフックイベントがあります：</p>
+          <p><code>UserPromptSubmit</code> 以外にも、Claude Codeにはさまざまなフックイベントがあります。</p>
 
-          <table>
-            <thead>
-              <tr>
-                <th>イベント</th>
-                <th>発火タイミング</th>
-                <th>用途例</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr>
-                <td><code>PreToolUse</code></td>
-                <td>ツール実行前</td>
-                <td>危険コマンドをブロック、ログ記録</td>
-              </tr>
-              <tr>
-                <td><code>PostToolUse</code></td>
-                <td>ツール実行後</td>
-                <td>編集後にフォーマッタ自動実行、テスト走らせる</td>
-              </tr>
-              <tr>
-                <td><code>Stop</code></td>
-                <td>Claudeが返答完了したとき</td>
-                <td>音を鳴らす、Slackに通知</td>
-              </tr>
-              <tr>
-                <td><code>SessionStart</code></td>
-                <td>セッション開始時</td>
-                <td>初期コンテキスト注入、環境チェック</td>
-              </tr>
-              <tr>
-                <td><code>PermissionRequest</code></td>
-                <td>権限要求時</td>
-                <td>音を鳴らして気付かせる</td>
-              </tr>
-            </tbody>
-          </table>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th scope="col">イベント</th>
+                  <th scope="col">発火タイミング</th>
+                  <th scope="col">用途例</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td><code>PreToolUse</code></td>
+                  <td>ツール実行前</td>
+                  <td>危険コマンドをブロック、ログ記録</td>
+                </tr>
+                <tr>
+                  <td><code>PostToolUse</code></td>
+                  <td>ツール実行後</td>
+                  <td>編集後にフォーマッターを自動実行、テストを走らせる</td>
+                </tr>
+                <tr>
+                  <td><code>Stop</code></td>
+                  <td>Claudeが返答を完了したとき</td>
+                  <td>音を鳴らす、Slackに通知</td>
+                </tr>
+                <tr>
+                  <td><code>SessionStart</code></td>
+                  <td>セッション開始時</td>
+                  <td>初期コンテキスト注入、環境チェック</td>
+                </tr>
+                <tr>
+                  <td><code>PermissionRequest</code></td>
+                  <td>権限要求時</td>
+                  <td>音を鳴らして気づかせる</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
 
           <div class="callout callout-warn">
             <p class="callout-title">運用上の注意</p>
-            <p>フックは <strong>毎メッセージ／毎ツール実行ごと</strong> に走るので、重い処理を書くと体感速度が落ちます。<br><code>timeout</code> を短め（5〜10秒）に設定し、ネットワーク呼び出しなどブロッキングする処理は避けましょう。</p>
+            <p>フックは毎メッセージ、毎ツール実行ごとに走るので、重い処理を書くと体感速度が落ちます。<br><code>timeout</code> を短め（5〜10秒）に設定し、ネットワーク呼び出しなどブロッキングする処理は避けましょう。</p>
           </div>
+        </section>
+
+        <section id="related">
+          <h2>関連するTips</h2>
+
+          <ul class="link-list">
+            <li><a href="../sound/">Claude Codeの「完了」「許可待ち」を音で知らせる</a><br><span>上の表にある <code>Stop</code> と <code>PermissionRequest</code> を使う例です</span></li>
+            <li><a href="../review-strategy/">タスクの重さでAIのレビュー方法を使い分ける</a><br><span>フックの設定ができたあと、AIの出力をどう仕上げるかの話です</span></li>
+          </ul>
         </section>
       </div>
 
       <footer class="article-footer">
         <a href="../" class="back-link">← Tips一覧に戻る</a>
       </footer>
-    </article>
+    </main>
 
-    <aside class="toc-sidebar">
+    <nav class="toc-sidebar" aria-label="この記事の内容">
       <p class="toc-title">この記事の内容</p>
       <ul class="toc-list">
         <li><a href="#problem">なぜ日時表示が必要なのか</a></li>
         <li><a href="#mechanism">仕組み（2層構造）</a></li>
         <li><a href="#setup">セットアップ手順</a></li>
         <li><a href="#faq">よくある疑問・注意点</a></li>
-        <li><a href="#applications">汎用フック活用例</a></li>
+        <li><a href="#applications">UserPromptSubmitフックの活用例</a></li>
+        <li><a href="#related">関連するTips</a></li>
       </ul>
-    </aside>
+    </nav>
   </div>
 
   <footer class="site-footer">

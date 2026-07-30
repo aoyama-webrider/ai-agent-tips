@@ -6,19 +6,23 @@
   <title>Claude Codeの「完了」「許可待ち」を音で知らせる — AI Agent Tips</title>
   <meta name="description" content="StopフックとPermissionRequestフックを使い、Claude Codeの応答完了や権限要求のタイミングで通知音を鳴らす設定方法。ながら作業の取りこぼしを防ぐ。">
   <meta name="robots" content="noindex, nofollow">
+  <meta property="og:type" content="article">
+  <meta property="og:title" content="Claude Codeの「完了」「許可待ち」を音で知らせる — AI Agent Tips">
+  <meta property="og:description" content="StopフックとPermissionRequestフックを使い、Claude Codeの応答完了や権限要求のタイミングで通知音を鳴らす設定方法。ながら作業の取りこぼしを防ぐ。">
+  <meta property="og:url" content="https://aoyama-webrider.github.io/ai-agent-tips/sound/">
 
   <link rel="icon" type="image/png" href="../favicon.png">
   <link rel="apple-touch-icon" href="../favicon.png">
 
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+JP:wght@400;500;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+JP:wght@400;500;700&family=JetBrains+Mono:wght@400&display=swap" rel="stylesheet">
 
   <style>
     :root {
       --text-primary: #18181b;
       --text-secondary: #52525b;
-      --text-tertiary: #a1a1aa;
+      --text-tertiary: #71717a;
       --bg-base: #fafaf9;
       --bg-elevated: #ffffff;
       --bg-soft: #f4f4f5;
@@ -29,8 +33,8 @@
       --accent: #2563eb;
       --accent-soft: #dbeafe;
       --accent-hover: #1d4ed8;
-      --warn: #d97706;
-      --tip: #059669;
+      --warn: #b45309;
+      --tip: #047857;
       --radius-sm: 6px;
       --radius-md: 10px;
       --radius-lg: 16px;
@@ -166,10 +170,9 @@
       font-weight: 600;
       letter-spacing: 0.04em;
       background: var(--accent-soft);
-      color: var(--accent);
+      color: var(--accent-hover);
       padding: 3px 10px;
       border-radius: 4px;
-      text-transform: uppercase;
     }
 
     .article-title {
@@ -202,6 +205,10 @@
       margin: 56px 0 20px;
       padding-top: 8px;
       color: var(--text-primary);
+    }
+
+    /* 目次から飛んだとき、見出しが固定ヘッダーの裏に隠れないようにする（idはsection側に付いている） */
+    .article-content section {
       scroll-margin-top: 80px;
     }
 
@@ -211,6 +218,10 @@
       margin: 36px 0 14px;
       letter-spacing: -0.01em;
       color: var(--text-primary);
+      scroll-margin-top: 80px;
+    }
+
+    .article-content h3[id] {
       scroll-margin-top: 80px;
     }
 
@@ -242,6 +253,8 @@
       padding: 2px 7px;
       border-radius: 4px;
       border: 1px solid var(--border-subtle);
+      /* 区切りのない長いトークンでページが横に伸びるのを防ぐ */
+      overflow-wrap: anywhere;
     }
 
     .article-content pre {
@@ -286,7 +299,7 @@
     }
 
     /* コマンド名やChatGPTなどの表記が崩れるため大文字変換はしない */
-    .callout-title {
+    .article-content .callout-title {
       font-weight: 700;
       font-size: 0.9rem;
       letter-spacing: 0.01em;
@@ -357,6 +370,22 @@
       box-shadow: var(--shadow-sm);
     }
 
+    /* 画面が狭いときは表だけを横スクロールさせ、ページ全体は横に伸ばさない */
+    .table-wrap {
+      overflow-x: auto;
+      margin: 20px 0 28px;
+      border-radius: var(--radius-md);
+      box-shadow: var(--shadow-sm);
+    }
+
+    .table-wrap table {
+      margin: 0;
+      box-shadow: none;
+      border-radius: 0;
+      /* これ以下には縮めず、狭い画面では横スクロールに切り替える */
+      min-width: 480px;
+    }
+
     table {
       width: 100%;
       border-collapse: collapse;
@@ -387,10 +416,34 @@
       border-bottom: none;
     }
 
+    .link-list {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+    }
+
+    .link-list li {
+      margin-bottom: 10px;
+    }
+
+    .link-list a {
+      color: var(--accent);
+      text-decoration: none;
+      font-weight: 500;
+    }
+
+    .link-list a:hover {
+      text-decoration: underline;
+    }
+
+    .link-list span {
+      color: var(--text-tertiary);
+      font-size: 0.88rem;
+    }
+
     .toc-sidebar {
       position: sticky;
       top: 100px;
-      align-self: start;
     }
 
     .toc-title {
@@ -468,6 +521,10 @@
       text-decoration: none;
     }
 
+    .site-footer a:hover {
+      text-decoration: underline;
+    }
+
     @media (max-width: 960px) {
       .layout {
         grid-template-columns: 1fr;
@@ -496,6 +553,22 @@
       .article-content h3 { font-size: 1.05rem; }
       .article-content .step-title { font-size: 1.05rem; }
     }
+
+    /* キーボード操作時に、どこにいるかが分かるようにする */
+    a:focus-visible {
+      outline: 2px solid var(--accent);
+      outline-offset: 2px;
+      border-radius: 2px;
+    }
+
+    /* OS側でアニメーションを控える設定にしている人には動きを出さない */
+    @media (prefers-reduced-motion: reduce) {
+      html { scroll-behavior: auto; }
+      *, *::before, *::after {
+        transition-duration: 0.01ms !important;
+        animation-duration: 0.01ms !important;
+      }
+    }
   </style>
 </head>
 <body>
@@ -512,7 +585,7 @@
   </header>
 
   <div class="layout">
-    <article class="article">
+    <main class="article">
       <p class="breadcrumb">
         <a href="../">Tips一覧</a>
         <span class="breadcrumb-sep">/</span>
@@ -536,9 +609,9 @@
         <section id="problem">
           <h2>なぜ音通知が必要なのか</h2>
 
-          <p>Claude Codeに少し重めの作業を投げると、完了まで数十秒〜数分かかることがあります。<br>その待ち時間に別の画面で作業していると、<strong>「終わったことに気づかず放置」「許可を求められて止まっているのに気づかず時間をロス」</strong> ということが起こりがちです。</p>
+          <p>Claude Codeに少し重めの作業を投げると、完了まで数十秒〜数分かかることがあります。<br>その待ち時間に別の画面で作業していると、「終わったことに気づかず放置」「許可を求められて止まっているのに気づかず時間をロス」 ということが起こりがちです。</p>
 
-          <p>そこで、Claude Codeが <strong>応答を終えたとき</strong> と <strong>コマンド実行などの許可を求めてきたとき</strong> に通知音を鳴らすようにします。<br>ながら作業をしていても、音だけで「いま自分の番が来た」と分かるようになります。</p>
+          <p>そこで、Claude Codeが 応答を終えたとき と コマンド実行などの許可を求めてきたとき に通知音を鳴らすようにします。<br>ながら作業をしていても、音だけで「いま自分の番が来た」と分かるようになります。</p>
 
           <div class="callout callout-tip">
             <p class="callout-title">この記事で使うフック</p>
@@ -559,7 +632,7 @@
         ↓
 [PermissionRequestフック発火] notify.wavを再生 → 「確認して」の音</div>
 
-          <p>ポイントは、再生に <code>PlaySync()</code> を使うこと。<br>フックは短命なサブプロセスとして起動するため、非同期再生（<code>Play()</code>）だと音が鳴り切る前にプロセスが終了して無音になることがあります。<br><code>PlaySync()</code> は再生完了まで待つので確実です。</p>
+          <p>ポイントは、再生に <code>PlaySync()</code> を使うことです。<br>フックは短命なサブプロセスとして起動するため、非同期再生（<code>Play()</code>）だと音が鳴り切る前にプロセスが終了して無音になることがあります。<br><code>PlaySync()</code> は再生完了まで待つので確実です。</p>
         </section>
 
         <section id="setup">
@@ -567,15 +640,20 @@
 
           <div class="callout callout-tip">
             <p class="callout-title">最短ルート: AIエージェントに任せる</p>
-            <p>手作業が不安なら、Claude Codeに<strong>このページのURLを渡して</strong>、次のように頼むだけでOKです。<br>設定ファイルの編集はAIがやってくれます。</p>
+            <p>手作業が不安なら、Claude CodeにこのページのURLを渡して、次のように頼むだけでOKです。<br>設定ファイルの編集はAIがやってくれます。</p>
             <pre><code>https://aoyama-webrider.github.io/ai-agent-tips/sound/
 ↑このページのとおり、私の settings.json に通知音の設定を反映して。
 ・既存の hooks 設定は壊さず、マージして（上書きしない）
-・終わったら、反映に再読み込み（/hooks を開き直す or 再起動）が必要か教えて</code></pre>
-            <p><strong>想定環境</strong>: Windows ＋ Claude Code（IDE拡張・CLIどちらでも）＋ Claudeサブスク。<br>この前提なら、ほぼそのまま再現できます。<br>ただし<strong>最後の再読み込み（<code>/hooks</code> を開き直す or 再起動）だけは手動</strong>です（AIはClaude Code自体の再起動まではできません）。</p>
+・終わったら、反映に再読み込み（/hooks を開き直す、または再起動）が必要か教えて</code></pre>
+            <p>この前提なら、ほぼそのまま再現できます。<br>ただし最後の再読み込み（<code>/hooks</code> を開き直す、または再起動）だけは手動です。<br>AIはClaude Code自体の再起動まではできません。</p>
           </div>
 
-          <p>仕組みを理解しながら自分で設定したい人向けに、手順も載せておきます（所要時間 約5分・Windows/PowerShell前提）。<br>Mac/Linuxの場合は <a href="#faq">注意点セクション</a> を参照してください。</p>
+          <div class="callout callout-warn">
+            <p class="callout-title">反映する前に、追加される内容を見せてもらう</p>
+            <p>フックのコマンドは、あなたの権限でそのまま実行されます。<br>つまりWebページの内容をAIに読ませてフックに反映させる手順は、外部のページを設定の元ネタにする行為です。<br>ページが書き換えられていた場合、以降の全セッションで意図しないコマンドが動くことになります。<br>依頼するときは「反映する前に、追加する差分と実行されるコマンドを見せて」と付け加えてください。<br>音を鳴らすだけのコマンドかどうかを、自分の目で確認してから許可するのが安全です。</p>
+          </div>
+
+          <p>仕組みを理解しながら自分で設定したい人向けに、手順も載せておきます。<br>所要時間は5分程度です（Windows・PowerShell前提）。<br>Mac/Linuxの場合は <a href="#mac-linux">Mac/Linuxで使うとき</a> を参照してください。</p>
 
           <div class="step">
             <div class="step-header">
@@ -587,10 +665,10 @@
 
             <div class="callout callout-tip">
               <p class="callout-title">この場所に書くと全セッションで鳴る</p>
-              <p>上のファイルはユーザー単位（グローバル）の設定です。<br>ここに書いたフックは、どのフォルダで開いたセッションでも読み込まれます。<br>プロジェクトの中の <code>.claude/settings.json</code> に書くと、そのプロジェクトを開いたときだけ鳴る設定になります。<br>常に鳴らしたいなら、ユーザー単位のほうに書いてください。</p>
+              <p>上のファイルはユーザー単位（グローバル）の設定なので、どのフォルダで開いたセッションでも読み込まれます。<br>プロジェクトの中の <code>.claude/settings.json</code> に書くと、そのプロジェクトを開いたときだけ鳴る設定になります。</p>
             </div>
 
-            <p><code>hooks</code> オブジェクトの中に、以下の <code>Stop</code> と <code>PermissionRequest</code> のブロックを追加します。<br><strong>すでに <code>hooks</code> がある場合は中身を消さずにマージ</strong>してください（例: <a href="../timestamp/">日時表示</a> の <code>UserPromptSubmit</code> など他のフックがあるときは、それらを残したまま <code>Stop</code> / <code>PermissionRequest</code> を足す）。</p>
+            <p><code>hooks</code> オブジェクトの中に、以下の <code>Stop</code> と <code>PermissionRequest</code> のブロックを追加します。<br>すでに <code>hooks</code> がある場合は中身を消さずにマージしてください（例: <a href="../timestamp/">日時表示</a> の <code>UserPromptSubmit</code> など他のフックがあるときは、それらを残したまま <code>Stop</code> / <code>PermissionRequest</code> を足す）。</p>
 
             <pre><code>{
   "hooks": {
@@ -629,38 +707,40 @@
               <h3 class="step-title">使えるWindows標準サウンドを選ぶ</h3>
             </div>
 
-            <p><code>C:\Windows\Media\</code> フォルダにOS標準のwavファイルが入っています。<br>エクスプローラで開いてダブルクリックすると試聴できます。<br>よく使われるもの：</p>
+            <p><code>C:\Windows\Media\</code> フォルダにOS標準のwavファイルが入っています。<br>エクスプローラーで開いてダブルクリックすると試聴できます。<br>よく使われるもの。</p>
 
-            <table>
-              <thead>
-                <tr>
-                  <th>ファイル名</th>
-                  <th>音のイメージ</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr>
-                  <td><code>chimes.wav</code></td>
-                  <td>やわらかいチャイム。完了通知向き</td>
-                </tr>
-                <tr>
-                  <td><code>notify.wav</code></td>
-                  <td>短い通知音。許可待ち向き</td>
-                </tr>
-                <tr>
-                  <td><code>ding.wav</code></td>
-                  <td>軽い「ポーン」。控えめにしたいとき</td>
-                </tr>
-                <tr>
-                  <td><code>tada.wav</code></td>
-                  <td>ファンファーレ。完了をはっきり知らせたいとき</td>
-                </tr>
-                <tr>
-                  <td><code>Windows Notify System Generic.wav</code></td>
-                  <td>標準の通知音。Windowsらしい音</td>
-                </tr>
-              </tbody>
-            </table>
+            <div class="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th scope="col">ファイル名</th>
+                    <th scope="col">音のイメージ</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td><code>chimes.wav</code></td>
+                    <td>やわらかいチャイム。完了通知向き</td>
+                  </tr>
+                  <tr>
+                    <td><code>notify.wav</code></td>
+                    <td>短い通知音。許可待ち向き</td>
+                  </tr>
+                  <tr>
+                    <td><code>ding.wav</code></td>
+                    <td>軽い「ポーン」。控えめにしたいとき</td>
+                  </tr>
+                  <tr>
+                    <td><code>tada.wav</code></td>
+                    <td>ファンファーレ。完了をはっきり知らせたいとき</td>
+                  </tr>
+                  <tr>
+                    <td><code>Windows Notify System Generic.wav</code></td>
+                    <td>標準の通知音。Windowsらしい音</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
 
             <p>パスをそのまま <code>command</code> の中の <code>'C:\\Windows\\Media\\〇〇.wav'</code> 部分に差し替えればOKです（JSON内なのでバックスラッシュは <code>\\</code> と2個重ねる点に注意）。</p>
           </div>
@@ -671,7 +751,7 @@
               <h3 class="step-title">設定を反映する</h3>
             </div>
 
-            <p>以下のいずれかでフックを読み込ませます：</p>
+            <p>以下のいずれかでフックを読み込ませます。</p>
             <ul>
               <li>Claude Codeのチャット内で <code>/hooks</code> を一度開いて閉じる（設定が再読み込みされる）</li>
               <li>Claude Codeを再起動する</li>
@@ -684,9 +764,9 @@
               <h3 class="step-title">動作確認</h3>
             </div>
 
-            <p>Claudeに簡単な質問を1つ投げてみてください。<br>返答が終わった瞬間に <code>Stop</code> の音（chimes）が鳴れば成功です。<br>次にコマンド実行を伴う依頼（例: 「いまのフォルダのファイル一覧を出して」）をすると、許可ダイアログが出るタイミングで <code>PermissionRequest</code> の音（notify）が鳴ります。</p>
+            <p>Claude Codeに簡単な質問を1つ投げてみてください。<br>返答が終わった瞬間に <code>Stop</code> の音（chimes）が鳴れば成功です。<br>次にコマンド実行を伴う依頼（例: 「いまのフォルダのファイル一覧を出して」）をすると、許可ダイアログが出るタイミングで <code>PermissionRequest</code> の音（notify）が鳴ります。</p>
 
-            <p>鳴らない場合は次の項目をチェック：</p>
+            <p>鳴らない場合は次の項目をチェック。</p>
             <ul>
               <li>settings.json のJSON構文が壊れていないか（カンマの抜け、バックスラッシュの数に注意）</li>
               <li>フックがロードされているか（<code>/hooks</code> で確認できる）</li>
@@ -703,32 +783,52 @@
           <h3>音が鳴りすぎてうるさいとき</h3>
           <ul>
             <li>まず <code>PermissionRequest</code> を外して <code>Stop</code> だけにする</li>
-            <li>権限の許可プロンプト自体が多い場合は、よく使う安全なコマンドを <code>settings.json</code> の <code>permissions.allow</code> に登録しておくと、そもそも許可要求＝音が減ります</li>
             <li>もっと控えめな音（<code>ding.wav</code> など）に変える</li>
           </ul>
 
-          <h3>自前の音源を鳴らしたい</h3>
-          <p>任意の <code>.wav</code> ファイルのパスを指定すれば使えます。<br><code>SoundPlayer</code> はwav形式のみ対応で、mp3は再生できない点に注意。<br>mp3を使いたい場合は <code>(New-Object Media.SoundPlayer ...)</code> の代わりに以下のようにWindows Media Player経由で鳴らせます：</p>
-          <pre><code>"command": "powershell.exe -NoProfile -Command \"Add-Type -AssemblyName presentationCore; $p = New-Object System.Windows.Media.MediaPlayer; $p.Open([uri]'C:\\path\\to\\sound.mp3'); $p.Play(); Start-Sleep -Seconds 2\""</code></pre>
+          <div class="callout callout-warn">
+            <p class="callout-title">音を減らす目的で permissions.allow を広げない</p>
+            <p>許可を求められる回数が減れば、その音も減ります。<br>ただし <code>permissions.allow</code> にコマンドを登録するのは、確認なしで実行してよいと宣言する操作です。<br>音がうるさいという理由で範囲を広げると、AIが誤った判断をしたときや、外部から不正な指示を読み込んだときにも、止める機会がなくなります。<br>許可設定は音の問題とは切り離して、必要なものだけを最小限の範囲で登録してください。</p>
+          </div>
 
-          <h3>音量を調整したい</h3>
+          <h3>自前の音源を鳴らしたいとき</h3>
+          <p>任意の <code>.wav</code> ファイルのパスを指定すれば使えます。<br><code>SoundPlayer</code> はwav形式のみ対応で、mp3は再生できません。<br>mp3を鳴らしたい場合は、次の内容で <code>.ps1</code> ファイルを作り、それをフックから呼び出します。</p>
+
+          <p>ファイル: <code>C:\Users\&lt;ユーザー名&gt;\.claude\play-sound.ps1</code></p>
+
+          <pre><code>Add-Type -AssemblyName presentationCore
+$player = New-Object System.Windows.Media.MediaPlayer
+$player.Open([uri]'C:\path\to\sound.mp3')
+$player.Play()
+Start-Sleep -Seconds 5</code></pre>
+
+          <pre><code>"command": "powershell.exe -NoProfile -File \"C:\\Users\\&lt;ユーザー名&gt;\\.claude\\play-sound.ps1\""</code></pre>
+
+          <p><code>Start-Sleep</code> の秒数は、音源の長さ以上にしてください。<br><code>Play()</code> は再生の完了を待たずに戻るため、この待ち時間が切れた時点で音も止まります。</p>
+
+          <div class="callout callout-warn">
+            <p class="callout-title">フックのコマンドに $ を直接書かない</p>
+            <p>フックのコマンドは、既定でbashに渡されます（Windowsでも、Git Bashが入っていればbash経由になります）。<br>そのため <code>$player</code> のような変数をコマンド文字列に直接書くと、bashが先に展開して空になり、PowerShellには届きません。<br>上のように処理を <code>.ps1</code> ファイルへ出しておけば、この問題は起きません。<br>どうしても1行で書きたい場合は、JSON内で <code>\\$player</code> と書いて、PowerShellに <code>$</code> を渡してください。</p>
+          </div>
+
+          <h3>音量を調整したいとき</h3>
           <p><code>SoundPlayer</code> 自体には音量指定がありません。<br>OSのアプリ音量ミキサーでPowerShellの音量を下げるか、あらかじめ音量を絞ったwavファイルを用意してください。</p>
 
-          <h3>Mac / Linux の場合</h3>
+          <h3 id="mac-linux">Mac/Linuxで使うとき</h3>
           <p>PowerShellの代わりにOS標準の再生コマンドを使います。</p>
-          <p>macOS（<code>afplay</code> が標準搭載）：</p>
+          <p>macOSは <code>afplay</code> が標準で入っています。</p>
           <pre><code>"command": "afplay /System/Library/Sounds/Glass.aiff"</code></pre>
-          <p>Linux（<code>paplay</code> や <code>aplay</code> など、環境にあるものを使う）：</p>
+          <p>Linuxは <code>paplay</code> や <code>aplay</code> など、環境にあるものを使います。</p>
           <pre><code>"command": "paplay /usr/share/sounds/freedesktop/stereo/complete.oga"</code></pre>
 
-          <h3>止めたいとき</h3>
+          <h3>音を止めたいとき</h3>
           <ul>
             <li>一時的に消したいだけなら、PCやアプリの音量をミュートする</li>
             <li>完全にオフにするには <code>settings.json</code> の <code>Stop</code> / <code>PermissionRequest</code> フックのブロックを削除する</li>
           </ul>
 
-          <h3>処理が遅くならない?</h3>
-          <p>音の再生は一瞬で終わるうえ、<code>Stop</code> はメッセージごとに1回・<code>PermissionRequest</code> は許可要求時のみなので、体感への影響はほぼありません。<br>ただしフックの中でネットワーク通信など重い処理を足すと遅延の原因になるので、音を鳴らすだけに留めるのが安全です。</p>
+          <h3>処理が遅くならないか</h3>
+          <p>OS標準の短いwavであれば、体感への影響はほぼありません。<br><code>Stop</code> はメッセージごとに1回、<code>PermissionRequest</code> は許可を求めるときだけ動きます。<br>ただし <code>PlaySync()</code> は再生の完了を待つため、長い音源に差し替えるとその長さぶんフックが待ち状態になります。<br>フックの中にネットワーク通信など重い処理を足すのも遅延の原因になるので、音を鳴らすだけに留めるのが安全です。</p>
         </section>
 
         <section id="applications">
@@ -736,35 +836,42 @@
 
           <p>同じ <code>Stop</code> / <code>PermissionRequest</code> フックの仕組みで、音以外の通知もできます。<br>集中作業中や、席を外しているときに気づきたいケースで使い分けると便利です。</p>
 
-          <table>
-            <thead>
-              <tr>
-                <th>通知方法</th>
-                <th>使いどころ</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr>
-                <td>Windowsのトースト通知</td>
-                <td>音を出せない環境（会議中・イヤホンなし）。画面右下にポップアップ</td>
-              </tr>
-              <tr>
-                <td>Slack / Discordへ通知</td>
-                <td>席を外していてもスマホで気づける。Webhook URLにPOSTするだけ</td>
-              </tr>
-              <tr>
-                <td>音声読み上げ</td>
-                <td>「完了しました」と喋らせる。画面を見ていなくても内容が分かる</td>
-              </tr>
-            </tbody>
-          </table>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th scope="col">通知方法</th>
+                  <th scope="col">使いどころ</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>Windowsのトースト通知</td>
+                  <td>音を出せない環境（会議中・イヤホンなし）。画面右下にポップアップ</td>
+                </tr>
+                <tr>
+                  <td>Slack / Discordへ通知</td>
+                  <td>席を外していてもスマホで気づける。Webhook URLにPOSTする</td>
+                </tr>
+                <tr>
+                  <td>音声読み上げ</td>
+                  <td>「完了しました」と喋らせる。画面を見ていなくても内容が分かる</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
 
           <h3>例: 完了時にWindowsトースト通知を出す</h3>
-          <p>音の代わり（または併用）に、画面右下へポップアップを出すパターン：</p>
+          <p>音の代わり（または併用）に、画面右下へポップアップを出すパターン。</p>
           <pre><code>"command": "powershell.exe -NoProfile -Command \"[Console]::OutputEncoding=[Text.Encoding]::UTF8; New-BurntToastNotification -Text 'Claude Code', '応答が完了しました'\""</code></pre>
           <div class="callout callout-warn">
             <p class="callout-title">事前準備が必要</p>
-            <p>上の <code>New-BurntToastNotification</code> はモジュール <code>BurntToast</code> のインストール（<code>Install-Module BurntToast</code>）が前提です。<br>標準機能だけで完結させたい場合は、まず本記事の音通知から始めるのがおすすめです。</p>
+            <p>上の <code>New-BurntToastNotification</code> はモジュール <code>BurntToast</code> のインストール（<code>Install-Module BurntToast</code>）が前提です。<br>標準機能だけで完結させたい場合は、まずこの記事の音通知から始めるのがおすすめです。</p>
+          </div>
+
+          <div class="callout callout-warn">
+            <p class="callout-title">Webhook URLは認証情報として扱う</p>
+            <p>Slack や Discord のWebhook URLは、それ自体が送信権限を持つ認証情報です。<br>URLを知っている人は誰でもそのチャンネルに投稿できます。<br><code>settings.json</code> やコマンド文字列に直接書くと、Gitで共有したときやログに残ったときに漏れます。<br>OSの環境変数から読む形にして、リポジトリには置かないでください。<br>漏れた可能性があるときは、Slack / Discord側でWebhookを削除して作り直します。</p>
           </div>
 
           <h3>例: 完了時に音声で読み上げる</h3>
@@ -775,14 +882,23 @@
             <p>フックには <code>Stop</code> / <code>PermissionRequest</code> のほかにも、ツール実行前後（<code>PreToolUse</code> / <code>PostToolUse</code>）やメッセージ送信時（<code>UserPromptSubmit</code>）などがあります。<br><a href="../timestamp/">日時表示のTip</a> の後半で各イベントの一覧と活用例をまとめているので、あわせてどうぞ。</p>
           </div>
         </section>
+
+        <section id="related">
+          <h2>関連するTips</h2>
+
+          <ul class="link-list">
+            <li><a href="../timestamp/">IDE内のClaude Codeチャットに日時を表示する</a><br><span>同じフックの仕組みを使った別の例。フックイベントの一覧もこちらにあります</span></li>
+            <li><a href="../review-strategy/">タスクの重さでAIのレビュー方法を使い分ける</a><br><span>通知で気づけるようになったあと、AIの出力をどう仕上げるかの話です</span></li>
+          </ul>
+        </section>
       </div>
 
       <footer class="article-footer">
         <a href="../" class="back-link">← Tips一覧に戻る</a>
       </footer>
-    </article>
+    </main>
 
-    <aside class="toc-sidebar">
+    <nav class="toc-sidebar" aria-label="この記事の内容">
       <p class="toc-title">この記事の内容</p>
       <ul class="toc-list">
         <li><a href="#problem">なぜ音通知が必要なのか</a></li>
@@ -790,8 +906,9 @@
         <li><a href="#setup">セットアップ手順</a></li>
         <li><a href="#faq">よくある疑問・注意点</a></li>
         <li><a href="#applications">音以外の通知方法</a></li>
+        <li><a href="#related">関連するTips</a></li>
       </ul>
-    </aside>
+    </nav>
   </div>
 
   <footer class="site-footer">

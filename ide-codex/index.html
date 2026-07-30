@@ -4,21 +4,25 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>VS CodeにCodexパネルを追加して、Claude Codeと並べて使う — AI Agent Tips</title>
-  <meta name="description" content="OpenAI公式のCodex拡張機能をVS Codeに入れて、Claude Codeと並べて使う手順。画像生成や別視点のレビューをエディタから離れずに実行できる。">
+  <meta name="description" content="OpenAI公式のCodex拡張機能をVS Codeに入れて、Claude Codeと並べて使う手順。画像生成や選択範囲の受け渡しを、エディタから離れずに実行できる。">
   <meta name="robots" content="noindex, nofollow">
+  <meta property="og:type" content="article">
+  <meta property="og:title" content="VS CodeにCodexパネルを追加して、Claude Codeと並べて使う — AI Agent Tips">
+  <meta property="og:description" content="OpenAI公式のCodex拡張機能をVS Codeに入れて、Claude Codeと並べて使う手順。画像生成や選択範囲の受け渡しを、エディタから離れずに実行できる。">
+  <meta property="og:url" content="https://aoyama-webrider.github.io/ai-agent-tips/ide-codex/">
 
   <link rel="icon" type="image/png" href="../favicon.png">
   <link rel="apple-touch-icon" href="../favicon.png">
 
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+JP:wght@400;500;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+JP:wght@400;500;700&family=JetBrains+Mono:wght@400&display=swap" rel="stylesheet">
 
   <style>
     :root {
       --text-primary: #18181b;
       --text-secondary: #52525b;
-      --text-tertiary: #a1a1aa;
+      --text-tertiary: #71717a;
       --bg-base: #fafaf9;
       --bg-elevated: #ffffff;
       --bg-soft: #f4f4f5;
@@ -29,8 +33,8 @@
       --accent: #2563eb;
       --accent-soft: #dbeafe;
       --accent-hover: #1d4ed8;
-      --warn: #d97706;
-      --tip: #059669;
+      --warn: #b45309;
+      --tip: #047857;
       --radius-sm: 6px;
       --radius-md: 10px;
       --radius-lg: 16px;
@@ -166,10 +170,9 @@
       font-weight: 600;
       letter-spacing: 0.04em;
       background: var(--accent-soft);
-      color: var(--accent);
+      color: var(--accent-hover);
       padding: 3px 10px;
       border-radius: 4px;
-      text-transform: uppercase;
     }
 
     .article-title {
@@ -202,6 +205,10 @@
       margin: 56px 0 20px;
       padding-top: 8px;
       color: var(--text-primary);
+    }
+
+    /* 目次から飛んだとき、見出しが固定ヘッダーの裏に隠れないようにする（idはsection側に付いている） */
+    .article-content section {
       scroll-margin-top: 80px;
     }
 
@@ -211,6 +218,10 @@
       margin: 36px 0 14px;
       letter-spacing: -0.01em;
       color: var(--text-primary);
+      scroll-margin-top: 80px;
+    }
+
+    .article-content h3[id] {
       scroll-margin-top: 80px;
     }
 
@@ -242,6 +253,8 @@
       padding: 2px 7px;
       border-radius: 4px;
       border: 1px solid var(--border-subtle);
+      /* 区切りのない長いトークンでページが横に伸びるのを防ぐ */
+      overflow-wrap: anywhere;
     }
 
     .article-content pre {
@@ -267,7 +280,7 @@
     }
 
     /* 各手順の「どこで操作するか」を示す一行 */
-    .where {
+    .article-content .where {
       font-size: 0.82rem;
       color: var(--text-tertiary);
       margin-bottom: 14px;
@@ -298,7 +311,7 @@
     }
 
     /* コマンド名やChatGPTなどの表記が崩れるため大文字変換はしない */
-    .callout-title {
+    .article-content .callout-title {
       font-weight: 700;
       font-size: 0.9rem;
       letter-spacing: 0.01em;
@@ -526,6 +539,10 @@
       text-decoration: none;
     }
 
+    .site-footer a:hover {
+      text-decoration: underline;
+    }
+
     @media (max-width: 960px) {
       .layout {
         grid-template-columns: 1fr;
@@ -554,6 +571,22 @@
       .article-content h3 { font-size: 1.05rem; }
       .article-content .step-title { font-size: 1.05rem; }
     }
+
+    /* キーボード操作時に、どこにいるかが分かるようにする */
+    a:focus-visible {
+      outline: 2px solid var(--accent);
+      outline-offset: 2px;
+      border-radius: 2px;
+    }
+
+    /* OS側でアニメーションを控える設定にしている人には動きを出さない */
+    @media (prefers-reduced-motion: reduce) {
+      html { scroll-behavior: auto; }
+      *, *::before, *::after {
+        transition-duration: 0.01ms !important;
+        animation-duration: 0.01ms !important;
+      }
+    }
   </style>
 </head>
 <body>
@@ -570,7 +603,7 @@
   </header>
 
   <div class="layout">
-    <article class="article">
+    <main class="article">
       <p class="breadcrumb">
         <a href="../">Tips一覧</a>
         <span class="breadcrumb-sep">/</span>
@@ -586,7 +619,7 @@
         </div>
         <h1 class="article-title">VS CodeにCodexパネルを追加して、Claude Codeと並べて使う</h1>
         <div class="article-meta">
-          <span class="article-meta-item">想定環境: VS Code 1.96.2以降 ＋ Codex拡張機能 ＋ ChatGPTサブスク（Plus / Pro / Business / Edu / Enterprise）</span>
+          <span class="article-meta-item">想定環境: Windows / macOS / Linux ＋ VS Code 1.96.2以降 ＋ Codex拡張機能 ＋ ChatGPTのアカウント（Free / Go / Plus / Pro / Business / Edu / Enterprise）</span>
         </div>
       </header>
 
@@ -594,15 +627,15 @@
         <section id="difference">
           <h2>Claude CodeからCodexを呼ぶのとは別の話</h2>
 
-          <p>Codexの使い方には2通りあり、この記事は後者の話です。<br>先に違いを整理しておきます。</p>
+          <p>Codexの使い方には2通りあります。<br>この記事は、VS CodeにCodexのパネルを追加する方式の話です。<br>先に違いを整理しておきます。</p>
 
           <div class="table-wrap">
             <table>
               <thead>
                 <tr>
-                  <th>方式</th>
-                  <th>どう動くか</th>
-                  <th>向いている場面</th>
+                  <th scope="col">方式</th>
+                  <th scope="col">どう動くか</th>
+                  <th scope="col">向いている場面</th>
                 </tr>
               </thead>
               <tbody>
@@ -625,7 +658,7 @@
           <h3>並べて使う価値</h3>
 
           <ul>
-            <li>画像生成をその場でできる。プラグイン経由では画像を生成できないので、パネルがあると資料用のカット画像を作る流れが切れない</li>
+            <li>その場で画像を生成できる。プラグイン経由では画像を生成できないので、パネルがあると資料用のカット画像を作る流れが切れない</li>
             <li>開いているファイルや選択したコードを、そのままCodexに渡せる。プロンプトを短く書ける</li>
             <li>Claude Codeで書いたものを、隣のパネルにいる別のモデルにそのまま見せられる</li>
           </ul>
@@ -650,8 +683,8 @@
               <table>
                 <thead>
                   <tr>
-                    <th>項目</th>
-                    <th>値</th>
+                    <th scope="col">項目</th>
+                    <th scope="col">値</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -700,9 +733,9 @@
 
             <p class="where"><span class="where-label">操作場所</span>: VS Codeのサイドバー</p>
 
-            <p>Claude Codeのパネルを右、Codexのパネルを左（または逆）に置くと、両方を同時に開いたまま作業できます。<br>アイコンをドラッグして移動できます。</p>
+            <p>Claude CodeとCodexのパネルを別々の場所に置くと、両方を同時に開いたまま作業できます。<br>サイドバーのアイコンはドラッグで移動できます。</p>
 
-            <p>公式のおすすめは、Codexパネルをエディタの右側に置く配置です。<br>コードを左、AIとの対話を右にすると視線の移動が少なくなります。</p>
+            <p>拡張機能のREADMEでは、Codexのパネルを右側へ移す人が多いと紹介されています。<br>コードを左、AIとの対話を右にすると視線の移動が少なくなります。</p>
           </div>
         </section>
 
@@ -715,9 +748,14 @@
 
           <pre><code>記事の見出し用に、ノートPCで作業する日本人男性の写真を生成して</code></pre>
 
-          <p>生成が終わると、Codexが保存先のパスを教えてくれます。<br>そのままではプロジェクトの外（Codexの作業フォルダ）に置かれるので、使うファイルはプロジェクトへコピーしてください。</p>
+          <p>保存先を指定しない場合、画像はCodexの作業フォルダ（<code>~/.codex/generated_images/</code>）に置かれ、そのパスが表示されます。<br>依頼文に「プロジェクトの <code>public/images/</code> に保存して」のように書けば、Codexがそこへ移してくれます。</p>
 
           <p>画像の指示は、用途と縦横比まで書くと精度が上がります。<br>「記事のアイキャッチ用に、横長（16:9）で」のように、置き場所を先に伝えるのがコツです。</p>
+
+          <div class="callout callout-warn">
+            <p class="callout-title">画像生成はFreeプランでは使えない</p>
+            <p>Codex自体はFreeプランでも使えますが、画像生成はFreeプランの対象外です。<br>また画像生成を含むやり取りは、含まないものと比べて平均3〜5倍の速さで利用量を消費します。<br>APIキーで使っている場合は、画像生成にはAPI側の料金がかかります。</p>
+          </div>
 
           <h3>開いているファイルや選択範囲を渡す</h3>
 
@@ -727,8 +765,8 @@
             <table>
               <thead>
                 <tr>
-                  <th>コマンド</th>
-                  <th>用途</th>
+                  <th scope="col">コマンド</th>
+                  <th scope="col">用途</th>
                 </tr>
               </thead>
               <tbody>
@@ -768,8 +806,8 @@
             <table>
               <thead>
                 <tr>
-                  <th>設定</th>
-                  <th>内容</th>
+                  <th scope="col">設定</th>
+                  <th scope="col">内容</th>
                 </tr>
               </thead>
               <tbody>
@@ -806,11 +844,37 @@
         <section id="windows">
           <h2>Windowsで使うときの注意</h2>
 
-          <p>Windowsには <code>chatgpt.runCodexInWindowsSubsystemForLinux</code> という設定があります。<br>WSL（Windows上でLinuxを動かす仕組み）が入っている場合に、CodexをWSL側で動かすオプションです。</p>
+          <p>WindowsのCodexは、既定でWindows用のサンドボックス（実行を隔離する仕組み）を使います。<br>公式ドキュメントでも、WSLや仮想マシンを用意せずPowerShell上でそのまま動くと説明されています。<br>ファイルの編集まで任せる使い方も、この状態でできます。</p>
 
-          <p>設定の説明では、サンドボックスの安全性と速度の面でこちらが推奨されています。<br>加えて、Windowsでファイル編集まで任せるモード（エージェントモード）は、現時点でWSLが必要とされています。<br>変更するとVS Codeが再読み込みされます。</p>
+          <h3>WSLを使うかどうか</h3>
 
-          <p>画像生成や相談だけの用途なら、この設定を触らなくても使えます。<br>コードの編集まで任せたい場合に、WSLの導入を検討してください。</p>
+          <p><code>chatgpt.runCodexInWindowsSubsystemForLinux</code> という設定があり、WSL（Windows上でLinuxを動かす仕組み）側でCodexを動かせます。<br>公式の案内では、既定はWindowsのサンドボックスのままでよく、WSLを選ぶのは次のような場合です。</p>
+
+          <ul>
+            <li>Linux固有のツールが必要なとき</li>
+            <li>作業環境がすでにWSL2の中にあるとき</li>
+            <li>Windowsのサンドボックスの2つのモードでは要件を満たせないとき</li>
+          </ul>
+
+          <p>この設定を変更すると、VS Codeが再読み込みされます。</p>
+
+          <h3>管理者権限を求められたとき</h3>
+
+          <p>推奨されるWindowsサンドボックスは、管理者による初期設定が前提になっています。<br>初回はその設定のために権限を求められます。</p>
+
+          <div class="callout callout-warn">
+            <p class="callout-title">会社の管理端末では先に確認する</p>
+            <p>この初期設定では、ローカルユーザーとグループの作成、ファイアウォールの設定、サンドボックス用ユーザーのログオン権限が必要です。<br>組織のポリシーでこれらが制限されていると失敗します。<br>管理端末で使う場合は、実行前にIT部門へ可否を確認してください。<br>公式の案内でも、失敗するときはIT部門に確認し、それまでは権限昇格が不要なモード（unelevated）を使うよう説明されています。</p>
+          </div>
+        </section>
+
+        <section id="related">
+          <h2>関連するTips</h2>
+
+          <ul class="link-list">
+            <li><a href="../codex/">Claude CodeからCodexを呼び出して、レビューと画像生成に使う</a><br><span>もう一方の方式。プラグイン経由でCodexに下請けさせるやり方</span></li>
+            <li><a href="../review-strategy/">タスクの重さでAIのレビュー方法を使い分ける</a><br><span>2つのAIを並べたあと、レビューをどこまで厚くするかの判断</span></li>
+          </ul>
         </section>
 
         <section id="links">
@@ -818,9 +882,8 @@
 
           <ul class="link-list">
             <li><a href="https://marketplace.visualstudio.com/items?itemName=openai.chatgpt" target="_blank" rel="noopener">Codex – OpenAI's coding agent（VS Code Marketplace）</a><br><span>拡張機能の配布ページ</span></li>
-            <li><a href="https://developers.openai.com/codex/ide" target="_blank" rel="noopener">Codex in your IDE（OpenAI）</a><br><span>IDE版Codexの公式ドキュメント</span></li>
-            <li><a href="https://developers.openai.com/codex/pricing" target="_blank" rel="noopener">Codex の料金・利用量（OpenAI）</a><br><span>ChatGPTのプランごとの上限</span></li>
-            <li><a href="../codex/">Claude CodeからCodexを呼び出して、レビューと画像生成に使う</a><br><span>もう一方の方式。プラグイン経由でCodexに下請けさせるやり方</span></li>
+            <li><a href="https://learn.chatgpt.com/docs/codex/ide" target="_blank" rel="noopener">Codex in your IDE（OpenAI）</a><br><span>IDE版Codexの公式ドキュメント</span></li>
+            <li><a href="https://learn.chatgpt.com/docs/pricing" target="_blank" rel="noopener">Codex の料金・利用量（OpenAI）</a><br><span>ChatGPTのプランごとの上限</span></li>
           </ul>
         </section>
       </div>
@@ -828,9 +891,9 @@
       <footer class="article-footer">
         <a href="../" class="back-link">← Tips一覧に戻る</a>
       </footer>
-    </article>
+    </main>
 
-    <aside class="toc-sidebar">
+    <nav class="toc-sidebar" aria-label="この記事の内容">
       <p class="toc-title">この記事の内容</p>
       <ul class="toc-list">
         <li><a href="#difference">Claude CodeからCodexを呼ぶのとは別の話</a></li>
@@ -838,9 +901,10 @@
         <li><a href="#usage">使い方</a></li>
         <li><a href="#settings">変えておくと快適な設定</a></li>
         <li><a href="#windows">Windowsで使うときの注意</a></li>
+        <li><a href="#related">関連するTips</a></li>
         <li><a href="#links">参考リンク</a></li>
       </ul>
-    </aside>
+    </nav>
   </div>
 
   <footer class="site-footer">

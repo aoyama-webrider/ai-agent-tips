@@ -6,19 +6,23 @@
   <title>タスクの重さでAIのレビュー方法を使い分ける — AI Agent Tips</title>
   <meta name="description" content="AIの初回出力は完成品ではない前提で、タスクの重さに応じて単発レビュー・ループレビュー・クロスレビューを使い分ける考え方と、そのままコピペできる頼み方。">
   <meta name="robots" content="noindex, nofollow">
+  <meta property="og:type" content="article">
+  <meta property="og:title" content="タスクの重さでAIのレビュー方法を使い分ける — AI Agent Tips">
+  <meta property="og:description" content="AIの初回出力は完成品ではない前提で、タスクの重さに応じて単発レビュー・ループレビュー・クロスレビューを使い分ける考え方と、そのままコピペできる頼み方。">
+  <meta property="og:url" content="https://aoyama-webrider.github.io/ai-agent-tips/review-strategy/">
 
   <link rel="icon" type="image/png" href="../favicon.png">
   <link rel="apple-touch-icon" href="../favicon.png">
 
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+JP:wght@400;500;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+JP:wght@400;500;700&family=JetBrains+Mono:wght@400&display=swap" rel="stylesheet">
 
   <style>
     :root {
       --text-primary: #18181b;
       --text-secondary: #52525b;
-      --text-tertiary: #a1a1aa;
+      --text-tertiary: #71717a;
       --bg-base: #fafaf9;
       --bg-elevated: #ffffff;
       --bg-soft: #f4f4f5;
@@ -29,8 +33,8 @@
       --accent: #2563eb;
       --accent-soft: #dbeafe;
       --accent-hover: #1d4ed8;
-      --warn: #d97706;
-      --tip: #059669;
+      --warn: #b45309;
+      --tip: #047857;
       --radius-sm: 6px;
       --radius-md: 10px;
       --radius-lg: 16px;
@@ -166,10 +170,9 @@
       font-weight: 600;
       letter-spacing: 0.04em;
       background: var(--accent-soft);
-      color: var(--accent);
+      color: var(--accent-hover);
       padding: 3px 10px;
       border-radius: 4px;
-      text-transform: uppercase;
     }
 
     .article-title {
@@ -202,6 +205,10 @@
       margin: 56px 0 20px;
       padding-top: 8px;
       color: var(--text-primary);
+    }
+
+    /* 目次から飛んだとき、見出しが固定ヘッダーの裏に隠れないようにする（idはsection側に付いている） */
+    .article-content section {
       scroll-margin-top: 80px;
     }
 
@@ -211,6 +218,10 @@
       margin: 36px 0 14px;
       letter-spacing: -0.01em;
       color: var(--text-primary);
+      scroll-margin-top: 80px;
+    }
+
+    .article-content h3[id] {
       scroll-margin-top: 80px;
     }
 
@@ -242,6 +253,8 @@
       padding: 2px 7px;
       border-radius: 4px;
       border: 1px solid var(--border-subtle);
+      /* 区切りのない長いトークンでページが横に伸びるのを防ぐ */
+      overflow-wrap: anywhere;
     }
 
     .article-content pre {
@@ -267,7 +280,7 @@
     }
 
     /* コピペして使うプロンプト例。コードではないので等幅にしない */
-    .prompt {
+    .article-content .prompt {
       background: var(--bg-elevated);
       border: 1px solid var(--border-subtle);
       border-left: 3px solid var(--accent);
@@ -308,7 +321,7 @@
     }
 
     /* 固有名詞の表記が崩れるため大文字変換はしない */
-    .callout-title {
+    .article-content .callout-title {
       font-weight: 700;
       font-size: 0.9rem;
       letter-spacing: 0.01em;
@@ -496,6 +509,10 @@
       text-decoration: none;
     }
 
+    .site-footer a:hover {
+      text-decoration: underline;
+    }
+
     @media (max-width: 960px) {
       .layout {
         grid-template-columns: 1fr;
@@ -523,6 +540,22 @@
       .article-content h2 { font-size: 1.3rem; margin-top: 40px; }
       .article-content h3 { font-size: 1.05rem; }
     }
+
+    /* キーボード操作時に、どこにいるかが分かるようにする */
+    a:focus-visible {
+      outline: 2px solid var(--accent);
+      outline-offset: 2px;
+      border-radius: 2px;
+    }
+
+    /* OS側でアニメーションを控える設定にしている人には動きを出さない */
+    @media (prefers-reduced-motion: reduce) {
+      html { scroll-behavior: auto; }
+      *, *::before, *::after {
+        transition-duration: 0.01ms !important;
+        animation-duration: 0.01ms !important;
+      }
+    }
   </style>
 </head>
 <body>
@@ -539,7 +572,7 @@
   </header>
 
   <div class="layout">
-    <article class="article">
+    <main class="article">
       <p class="breadcrumb">
         <a href="../">Tips一覧</a>
         <span class="breadcrumb-sep">/</span>
@@ -561,17 +594,17 @@
 
       <div class="article-content">
         <section id="premise">
-          <h2>1回目の出力は完成品ではない</h2>
+          <h2>初回の出力は完成品ではない</h2>
 
-          <p>モデルの進化で、事実をでっち上げるような明確な誤り（ハルシネーション）は確実に減りました。<br>体感としても、以前ほど「もっともらしい嘘」に警戒しなくてよくなっています。</p>
+          <p>モデルが新しくなるにつれて、事実をでっち上げるような明確な誤り（ハルシネーション）は減ってきた、というのが私の実感です。<br>ここは計測した数字ではなく、日々使っている中での体感として書いています。</p>
 
-          <p>ただし、見落としや抜け漏れは今も普通に起こります。<br>最新世代のモデルを使っても、推論の強さを上げても、1回の出力で完璧に仕上がることはほぼありません。<br>指示のうち1項目だけ反映されていない、前提条件が1つ抜けている、といった漏れが残ります。</p>
+          <p>いっぽうで、見落としや抜け漏れは今も普通に起こります。<br>最新世代のモデルを使っても、推論の強さを上げても、1回の出力で完璧に仕上がることはほぼありません。<br>指示のうち1項目だけ反映されていない、前提条件が1つ抜けている、といった漏れが残ります。</p>
 
           <p>そこで有効なのが、初回出力のあとにレビューを挟むことです。<br>ポイントは、すべてのタスクに同じレビューをかけないことです。<br>タスクの重さに応じて、レビューの厚みを変えます。</p>
 
           <div class="callout callout-tip">
             <p class="callout-title">ねらいは人の手間を減らすこと</p>
-            <p>レビューを挟む目的は、人のチェックをなくすことではありません。<br>AI自身で到達できるところまで完成度を上げてもらい、人は最終調整だけを担う形にすることです。<br>粗い状態のものを人が直すより、そのほうが結果的に速く終わります。</p>
+            <p>レビューを挟む目的は、人のチェックをなくすことではありません。<br>ねらいは、AI自身で到達できるところまで完成度を上げてもらい、人は最終調整だけを担う形にすることです。<br>粗い状態のものを人が直すより、そのほうが結果的に速く終わります。</p>
           </div>
         </section>
 
@@ -584,9 +617,9 @@
             <table>
               <thead>
                 <tr>
-                  <th>タスクの重さ</th>
-                  <th>レビュー方針</th>
-                  <th>目安</th>
+                  <th scope="col">タスクの重さ</th>
+                  <th scope="col">レビュー方針</th>
+                  <th scope="col">目安</th>
                 </tr>
               </thead>
               <tbody>
@@ -625,7 +658,7 @@
 
           <ul>
             <li>社外に出るか、社内で閉じるか</li>
-            <li>間違いに気づける人が、自分より下流にいるか</li>
+            <li>自分より後の工程に、間違いに気づける人がいるか</li>
             <li>公開後に直せるか、直せないか</li>
             <li>やり直しに何分かかるか</li>
           </ul>
@@ -658,7 +691,7 @@
 1. レビュー（観点: 事実誤り／指示の反映漏れ／抜け／わかりにくさ）
 2. 指摘の修正
 3. その周で何を直したかを1行で報告
-終了条件は、新しい指摘が出ないこと。または5周に達したら終了。
+終了条件は、新しい指摘が出ないこと。ただし5周に達した時点でも終了とする。
 言い換えレベルの些細な修正は指摘に含めないで。</p>
 
           <div class="callout callout-warn">
@@ -672,9 +705,14 @@
         <section id="cross">
           <h2>クロスレビュー（激重タスク）</h2>
 
-          <p>作ったモデルとは別のモデルに読ませます。<br>同じモデルの自己レビューは、作ったときの前提をそのまま共有しているため、同じ見落としを繰り返しやすいからです。</p>
+          <p>作ったモデルとは別のモデルに読ませます。<br>同じモデルの自己レビューは、作ったときの前提をそのまま引き継いでいるので、同じ見落としを繰り返しやすいのです。</p>
 
           <p>別のモデル、できれば別の会社のモデルに渡すと、前提を知らない読み手として読んでくれます。<br>「ここは説明が足りない」「この根拠はどこから来たのか」といった、内側からは出にくい指摘が返ってきます。</p>
+
+          <div class="callout callout-warn">
+            <p class="callout-title">別会社なら安心、ではない</p>
+            <p>別のモデルでも、学習しているデータや典型的な答え方は重なっています。<br>こちらが渡した前提が間違っていれば、同じ誤りに揃って乗ることもあります。<br>クロスレビューは見落としを見つける確率を上げる手段であって、一次情報との突き合わせの代わりにはなりません。<br>数字や固有名詞は、最後に人が出典で確認してください。</p>
+          </div>
 
           <p class="prompt"><span class="prompt-label">プロンプト例（渡す側に添える）</span>これは別のAIが作ったものです。
 前提を知らない読み手として、事実の誤りと説明の抜けを指摘してください。
@@ -705,13 +743,13 @@ B（再レビュー）→ 新しい指摘なし → 終了</div>
 
           <h3>レビューは無料ではない</h3>
 
-          <p>ループもクロスも、そのぶん利用量と時間を使います。<br>軽いタスクにまで厚いレビューを入れると、作業全体が遅くなります。<br>重さの判定を先にやるのは、この無駄を避けるためです。</p>
+          <p>ループレビューもクロスレビューも、そのぶん利用量と時間を使います。<br>軽いタスクにまで厚いレビューを入れると、作業全体が遅くなります。<br>重さの判定を先にやるのは、この無駄を避けるためです。</p>
 
-          <p>自動でレビューを走らせる仕組みもありますが、往復が止まらなくなることがあります。<br>常時オンにせず、見ていられるときだけ有効にするのが安全です。</p>
+          <p>自動でレビューを走らせる仕組みもありますが、往復が止まらなくなることがあります。<br>Codexのプラグインにも、応答が終わるたびにレビューを走らせる設定（レビューゲート）があります。<br>詳細と戻し方は <a href="../codex/#faq">Claude CodeからCodexを呼び出す</a> の注意点にまとめました。<br>常時オンにせず、見ていられるときだけ有効にするのが安全です。</p>
 
           <h3>「問題ありません」を信じすぎない</h3>
 
-          <p>AI自身の合格判定は、必ずしも正しくありません。<br>終了条件を「AIがOKと言ったら」だけにせず、周回数の上限も併記してください。<br>指摘が0件で返ってきたときは、観点の指定が抽象的すぎることもあります。</p>
+          <p>AI自身の合格判定は、必ずしも正しくありません。<br>終了条件を「AIがOKと言ったら」だけにせず、周回数の上限も併記してください。<br>指摘が0件で返ってきたときは、観点の指定が抽象的すぎる可能性を疑ってください。</p>
 
           <h3>事実確認と公開判断は人がやる</h3>
 
@@ -726,7 +764,7 @@ B（再レビュー）→ 新しい指摘なし → 終了</div>
             <li>レビューの厚みは、間違ったときの損害で決める</li>
             <li>同じモデルの自己レビューには限界がある。重要なものは別のモデルに読ませる</li>
             <li>ループには必ず終了条件（周回数の上限）を付ける</li>
-            <li>人が見る前の完成度を上げるのが目的で、人のチェックをなくすことではない</li>
+            <li>目的は、人が見る前の完成度を上げること。人のチェックをなくすことではない</li>
           </ul>
         </section>
 
@@ -743,12 +781,12 @@ B（再レビュー）→ 新しい指摘なし → 終了</div>
       <footer class="article-footer">
         <a href="../" class="back-link">← Tips一覧に戻る</a>
       </footer>
-    </article>
+    </main>
 
-    <aside class="toc-sidebar">
+    <nav class="toc-sidebar" aria-label="この記事の内容">
       <p class="toc-title">この記事の内容</p>
       <ul class="toc-list">
-        <li><a href="#premise">1回目の出力は完成品ではない</a></li>
+        <li><a href="#premise">初回の出力は完成品ではない</a></li>
         <li><a href="#tiers">重さ別の5段階</a></li>
         <li><a href="#single">単発レビュー（中タスク）</a></li>
         <li><a href="#loop">ループレビュー（重タスク）</a></li>
@@ -758,7 +796,7 @@ B（再レビュー）→ 新しい指摘なし → 終了</div>
         <li><a href="#summary">まとめ</a></li>
         <li><a href="#links">関連するTips</a></li>
       </ul>
-    </aside>
+    </nav>
   </div>
 
   <footer class="site-footer">
