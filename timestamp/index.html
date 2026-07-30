@@ -335,7 +335,8 @@
       flex-shrink: 0;
     }
 
-    .step-title {
+    /* .article-content h3 の margin（上36px/下14px）に負けて番号とズレるため、詳細度を上げて打ち消す */
+    .article-content .step-title {
       font-size: 1.15rem;
       font-weight: 600;
       letter-spacing: -0.01em;
@@ -495,6 +496,7 @@
       .article-content pre { padding: 16px 18px; font-size: 0.8rem; }
       .article-content h2 { font-size: 1.3rem; margin-top: 40px; }
       .article-content h3 { font-size: 1.05rem; }
+      .article-content .step-title { font-size: 1.05rem; }
     }
   </style>
 </head>
@@ -536,11 +538,11 @@
         <section id="problem">
           <h2>なぜ日時表示が必要なのか</h2>
 
-          <p>IDE内のClaude Codeチャットでは、各メッセージの送信時刻が画面に出ません。少し前のやり取りを遡るときに <strong>「これいつの会話だっけ？」</strong> が分からず、作業の経過や時系列が把握しづらくなります。</p>
+          <p>IDE内のClaude Codeチャットでは、各メッセージの送信時刻が画面に出ません。<br>少し前のやり取りを遡るときに <strong>「これいつの会話だっけ？」</strong> が分からず、作業の経過や時系列が把握しづらくなります。</p>
 
-          <p>Claude Code本体には <code>showMessageTimestamps</code> という設定がありますが、IDE拡張機能のチャットUIはこの設定を読みません（IDEがUIを独自に描画しているため）。なので設定を <code>true</code> にしても効きません。</p>
+          <p>Claude Code本体には <code>showMessageTimestamps</code> という設定がありますが、IDE拡張機能のチャットUIはこの設定を読みません（IDEがUIを独自に描画しているため）。<br>なので設定を <code>true</code> にしても効きません。</p>
 
-          <p>そこで「<strong>Claudeに毎回時刻を伝えて、返信の冒頭に文字として書いてもらう</strong>」運用にします。UI実装に依存せず、チャット履歴に時刻が確実に残ります。</p>
+          <p>そこで「<strong>Claudeに毎回時刻を伝えて、返信の冒頭に文字として書いてもらう</strong>」運用にします。<br>UI実装に依存せず、チャット履歴に時刻が確実に残ります。</p>
         </section>
 
         <section id="mechanism">
@@ -560,7 +562,7 @@
           <p>Claude Codeの <code>UserPromptSubmit</code> フックを使い、ユーザーがメッセージを送信するたびに、現在のシステム時刻をPowerShellで取得してClaudeのコンテキストに渡します。</p>
 
           <h3>層2: ルール（返信冒頭に出力させる）</h3>
-          <p>グローバル <code>CLAUDE.md</code> に「返信冒頭に日時を書く」というルールを記述し、Claudeに守らせます。これにより、どのワークスペースで開いたセッションでも同じ挙動になります。</p>
+          <p>グローバル <code>CLAUDE.md</code> に「返信冒頭に日時を書く」というルールを記述し、Claudeに守らせます。<br>これにより、どのワークスペースで開いたセッションでも同じ挙動になります。</p>
         </section>
 
         <section id="setup">
@@ -568,16 +570,16 @@
 
           <div class="callout callout-tip">
             <p class="callout-title">最短ルート: AIエージェントに任せる</p>
-            <p>手作業が不安なら、Claude Codeに<strong>このページのURLを渡して</strong>、次のように頼むだけでOKです。<code>settings.json</code> と グローバル <code>CLAUDE.md</code> の両方をAIが編集してくれます。</p>
+            <p>手作業が不安なら、Claude Codeに<strong>このページのURLを渡して</strong>、次のように頼むだけでOKです。<br><code>settings.json</code> と グローバル <code>CLAUDE.md</code> の両方をAIが編集してくれます。</p>
             <pre><code>https://aoyama-webrider.github.io/ai-agent-tips/timestamp/
 ↑このページのとおり、私の環境に日時表示の設定を反映して。
 ・settings.json の hooks と グローバル CLAUDE.md の両方を設定して
 ・既存の設定は壊さず、マージして（上書きしない）
 ・終わったら、反映に再読み込み（/hooks を開き直す or 再起動）が必要か教えて</code></pre>
-            <p><strong>想定環境</strong>: Windows ＋ VS Codeなどのエディタ ＋ Claude Code拡張 ＋ Claudeサブスク。この前提なら、ほぼそのまま再現できます。ただし<strong>最後の再読み込み（<code>/hooks</code> を開き直す or 再起動）だけは手動</strong>です。</p>
+            <p><strong>想定環境</strong>: Windows ＋ VS Codeなどのエディタ ＋ Claude Code拡張 ＋ Claudeサブスク。<br>この前提なら、ほぼそのまま再現できます。<br>ただし<strong>最後の再読み込み（<code>/hooks</code> を開き直す or 再起動）だけは手動</strong>です。</p>
           </div>
 
-          <p>仕組みを理解しながら自分で設定したい人向けに、手順も載せておきます（所要時間 5〜10分・Windows/PowerShell前提）。Mac/Linuxの場合は <a href="#faq">注意点セクション</a> を参照してください。</p>
+          <p>仕組みを理解しながら自分で設定したい人向けに、手順も載せておきます（所要時間 5〜10分・Windows/PowerShell前提）。<br>Mac/Linuxの場合は <a href="#faq">注意点セクション</a> を参照してください。</p>
 
           <div class="step">
             <div class="step-header">
@@ -587,7 +589,7 @@
 
             <p>ファイル: <code>C:\Users\&lt;ユーザー名&gt;\.claude\settings.json</code></p>
 
-            <p><code>hooks</code> オブジェクトの中に、以下のブロックを追加します。<strong>すでに <code>hooks</code> がある場合は中身を消さずにマージ</strong>してください（他のフックがあれば、それらを残したまま <code>UserPromptSubmit</code> を足す）。</p>
+            <p><code>hooks</code> オブジェクトの中に、以下のブロックを追加します。<br><strong>すでに <code>hooks</code> がある場合は中身を消さずにマージ</strong>してください（他のフックがあれば、それらを残したまま <code>UserPromptSubmit</code> を足す）。</p>
 
             <pre><code>{
   "hooks": {
@@ -607,7 +609,7 @@
 
             <div class="callout callout-warn">
               <p class="callout-title">Encoding注意</p>
-              <p><code>[Console]::OutputEncoding = [System.Text.Encoding]::UTF8;</code> がないと日本語が文字化けします。PowerShellのデフォルト出力エンコーディングがShift-JISのため、ここでUTF-8に切り替える必要があります。</p>
+              <p><code>[Console]::OutputEncoding = [System.Text.Encoding]::UTF8;</code> がないと日本語が文字化けします。<br>PowerShellのデフォルト出力エンコーディングがShift-JISのため、ここでUTF-8に切り替える必要があります。</p>
             </div>
           </div>
 
@@ -632,7 +634,7 @@
 
             <p>ファイル: <code>C:\Users\&lt;ユーザー名&gt;\.claude\CLAUDE.md</code></p>
 
-            <p>このファイルは全プロジェクトで読み込まれるグローバルな指示書です。以下のセクションを追加します：</p>
+            <p>このファイルは全プロジェクトで読み込まれるグローバルな指示書です。<br>以下のセクションを追加します：</p>
 
             <pre><code>## 返信フォーマット
 - 各返信の冒頭に、現在の日時を `YYYY-MM-DD HH:mm (曜日略)` 形式で1行記載する（例: `2026-05-11 15:06 (月)`）
@@ -643,7 +645,7 @@
 
             <div class="callout callout-tip">
               <p class="callout-title">グローバルCLAUDE.mdが効くわけ</p>
-              <p>プロジェクト別の <code>CLAUDE.md</code> や記憶ファイル（メモリ）に書くと、そのフォルダで開いたセッションでしか効きません。複数フォルダで使いたい場合は <strong>必ずグローバルCLAUDE.md に書く</strong> ようにしてください。</p>
+              <p>プロジェクト別の <code>CLAUDE.md</code> や記憶ファイル（メモリ）に書くと、そのフォルダで開いたセッションでしか効きません。<br>複数フォルダで使いたい場合は <strong>必ずグローバルCLAUDE.md に書く</strong> ようにしてください。</p>
             </div>
           </div>
 
@@ -653,7 +655,7 @@
               <h3 class="step-title">動作確認</h3>
             </div>
 
-            <p>Claude Codeに何かメッセージを送ってみてください。返信が次のように始まれば成功です：</p>
+            <p>Claude Codeに何かメッセージを送ってみてください。<br>返信が次のように始まれば成功です：</p>
 
             <pre><code>2026-05-11 15:06 (月)
 
@@ -673,7 +675,7 @@
           <h2>よくある疑問・注意点</h2>
 
           <h3>Mac / Linux の場合</h3>
-          <p>PowerShellの代わりにシェルコマンドでフックを書きます。<code>command</code> の中身をたとえば以下のように差し替えてください：</p>
+          <p>PowerShellの代わりにシェルコマンドでフックを書きます。<br><code>command</code> の中身をたとえば以下のように差し替えてください：</p>
           <pre><code>"command": "echo \"{\\\"hookSpecificOutput\\\":{\\\"hookEventName\\\":\\\"UserPromptSubmit\\\",\\\"additionalContext\\\":\\\"現在の日時: $(date '+%Y-%m-%d %H:%M:%S (%a)')\\\"}}\""</code></pre>
 
           <h3>表示をやめたいとき</h3>
@@ -683,22 +685,22 @@
           </ul>
 
           <h3>秒単位まで表示したい場合</h3>
-          <p>CLAUDE.md のフォーマット指定を <code>YYYY-MM-DD HH:mm:ss (曜日)</code> に変えるだけです。フック側は元から秒まで取得しています。</p>
+          <p>CLAUDE.md のフォーマット指定を <code>YYYY-MM-DD HH:mm:ss (曜日)</code> に変えるだけです。<br>フック側は元から秒まで取得しています。</p>
 
           <h3>タイムゾーン</h3>
-          <p>PCのローカル時刻が使われます。海外出張や時差のある作業環境では <code>Get-Date</code> がローカル時刻を返すので、JSTを明示したい場合はフォーマットに <code>K</code>（タイムゾーンオフセット）を追加します。</p>
+          <p>PCのローカル時刻が使われます。<br>海外出張や時差のある作業環境では <code>Get-Date</code> がローカル時刻を返すので、JSTを明示したい場合はフォーマットに <code>K</code>（タイムゾーンオフセット）を追加します。</p>
 
           <h3>IDE内蔵AI（Composer/Chat）には効かない</h3>
-          <p>このフックはClaude Codeプラグイン専用です。IDE内蔵のAI機能（Cmd+K、Composer、Chat）はAnthropicとは別のAPI経路で動いているため、この設定の影響を受けません。</p>
+          <p>このフックはClaude Codeプラグイン専用です。<br>IDE内蔵のAI機能（Cmd+K、Composer、Chat）はAnthropicとは別のAPI経路で動いているため、この設定の影響を受けません。</p>
 
           <h3>ワークスペース別の記憶（メモリ）と併用するとき</h3>
-          <p>記憶ファイル（<code>~/.claude/projects/&lt;sanitized-cwd&gt;/memory/</code>）に同じルールを書いても効きますが、ワークスペース単位の効力範囲なので注意。<strong>全セッション共通にしたいルールはグローバルCLAUDE.mdへ</strong> が原則です。</p>
+          <p>記憶ファイル（<code>~/.claude/projects/&lt;sanitized-cwd&gt;/memory/</code>）に同じルールを書いても効きますが、ワークスペース単位の効力範囲なので注意。<br><strong>全セッション共通にしたいルールはグローバルCLAUDE.mdへ</strong> が原則です。</p>
         </section>
 
         <section id="applications">
           <h2>UserPromptSubmitフックの汎用活用例</h2>
 
-          <p>このフックは「ユーザーがメッセージを送るたびに、Claudeに渡すコンテキストを動的に追加できる窓口」として汎用的に使えます。日時表示はその一例にすぎません。</p>
+          <p>このフックは「ユーザーがメッセージを送るたびに、Claudeに渡すコンテキストを動的に追加できる窓口」として汎用的に使えます。<br>日時表示はその一例にすぎません。</p>
 
           <h3>応用アイディア</h3>
 
@@ -745,7 +747,7 @@
 
           <h3>複数の情報を1つのフックでまとめて渡す</h3>
 
-          <p>フックを複数登録する代わりに、1つのフック内で複数の情報をまとめて <code>additionalContext</code> に入れる書き方が推奨です。フックが多いとセッション起動・各メッセージごとに余分なプロセスが立ち上がるため。</p>
+          <p>フックを複数登録する代わりに、1つのフック内で複数の情報をまとめて <code>additionalContext</code> に入れる書き方が推奨です。<br>フックが多いとセッション起動・各メッセージごとに余分なプロセスが立ち上がるため。</p>
 
           <pre><code>$dt = Get-Date -Format 'yyyy-MM-dd HH:mm (dddd)'
 $branch = (git branch --show-current 2&gt;$null)
@@ -795,7 +797,7 @@ $ctx = "現在の日時: $dt`n現在のブランチ: $branch"
 
           <div class="callout callout-warn">
             <p class="callout-title">運用上の注意</p>
-            <p>フックは <strong>毎メッセージ／毎ツール実行ごと</strong> に走るので、重い処理を書くと体感速度が落ちます。<code>timeout</code> を短め（5〜10秒）に設定し、ネットワーク呼び出しなどブロッキングする処理は避けましょう。</p>
+            <p>フックは <strong>毎メッセージ／毎ツール実行ごと</strong> に走るので、重い処理を書くと体感速度が落ちます。<br><code>timeout</code> を短め（5〜10秒）に設定し、ネットワーク呼び出しなどブロッキングする処理は避けましょう。</p>
           </div>
         </section>
       </div>
