@@ -95,8 +95,8 @@
 ↑このページのとおり、私の環境に日時表示の設定を反映して。
 ・settings.json の hooks と、グローバルの CLAUDE.md の両方を設定して
 ・既存の設定は壊さず、マージして（上書きしない）
-・終わったら、反映に再読み込み（/hooks を開き直す、または再起動）が必要か教えて</code></pre>
-            <p>この前提なら、ほぼそのまま再現できます。<br>ただし最後の再読み込み（<code>/hooks</code> を開き直す、または再起動）だけは手動です。</p>
+・終わったら、反映に再起動が必要か教えて</code></pre>
+            <p>記事冒頭に書いた想定環境どおりであれば、ほぼそのまま再現できます。<br>ただし最後の再起動だけは手動です（AIはClaude Code自体を再起動できません）。</p>
           </div>
 
           <div class="callout callout-warn">
@@ -134,7 +134,7 @@
 
             <div class="callout callout-warn">
               <p class="callout-title">Encoding注意</p>
-              <p><code>[Console]::OutputEncoding = [System.Text.Encoding]::UTF8;</code> がないと日本語が文字化けします。<br>Windowsのコンソール出力はCP932（Shift-JIS系）が既定のため、ここでUTF-8に切り替えておく必要があります。</p>
+              <p><code>[Console]::OutputEncoding = [System.Text.Encoding]::UTF8;</code> がないと日本語が文字化けします。<br>日本語環境のWindows PowerShellでは、コンソールの出力がCP932（Shift-JIS系）になることが多いためです。<br>環境ごとの既定に左右されないよう、ここでUTF-8に固定します。</p>
             </div>
           </div>
 
@@ -167,15 +167,13 @@
               <h3 class="step-title">設定を反映する</h3>
             </div>
 
-            <p>ここまでの2つを保存したら、以下のいずれかで読み込ませます。</p>
-            <ul>
-              <li>Claude Codeを再起動する（確実）</li>
-              <li>チャット内で <code>/hooks</code> を一度開いて閉じる（フック設定だけが再読み込みされる）</li>
-            </ul>
+            <p>初回はClaude Codeを再起動してください。<br>フックの設定は保存すると自動で反映されますが、グローバル <code>CLAUDE.md</code> はセッションの開始時に読み込まれるためです。</p>
+
+            <p>2回目以降、フックだけを変更した場合は再起動は不要です。<br>入ったかどうかは、チャット内で <code>/hooks</code> を実行すると確認できます（設定を一覧表示する読み取り専用の画面です）。</p>
 
             <div class="callout callout-warn">
-              <p class="callout-title">CLAUDE.mdの編集はこの前に済ませる</p>
-              <p>グローバル <code>CLAUDE.md</code> はセッションの開始時に読み込まれます。<br>再起動したあとに編集しても、そのセッションには反映されません。<br>先にフックとCLAUDE.mdの両方を保存してから、この手順に進んでください。</p>
+              <p class="callout-title">編集をすべて終えてから再起動する</p>
+              <p>再起動したあとに <code>CLAUDE.md</code> を編集しても、そのセッションには反映されません。<br>ステップ1と2の両方を保存し終えてから、この手順に進んでください。</p>
             </div>
           </div>
 
@@ -191,7 +189,7 @@
 
 （ここから返信本文）</code></pre>
 
-            <p>日時が出ない場合は次の項目をチェック。</p>
+            <p>日時が出ない場合は、次の項目を確認してください。</p>
             <ul>
               <li>settings.json のJSON構文が壊れていないか（カンマの抜けに注意）</li>
               <li>フックがロードされているか（<code>/hooks</code> を開いて確認できる）</li>
@@ -273,37 +271,55 @@
 
           <h3>実装パターン</h3>
 
-          <p>この記事の日時のフックには変数（<code>$</code>）が出てきません。<br>いっぽう、Gitブランチのように途中の値を変数に入れる処理では、1行で書くと壊れます。<br>理由は次の注意にまとめました。</p>
+          <p>この記事の日時のフックには変数（<code>$</code>）が出てきません。<br>いっぽうGitブランチのように途中の値を変数に入れる処理では、書き方を変える必要があります。</p>
 
           <div class="callout callout-warn">
-            <p class="callout-title">フックのコマンドに $ を直接書かない</p>
-            <p>フックのコマンドは、既定でbashに渡されます（Windowsでも、Git Bashが入っていればbash経由になります）。<br>そのため <code>$branch</code> のような変数をそのまま書くと、bashが先に展開して空になり、PowerShellには届きません。<br><code>2&gt;$null</code> も <code>2&gt;</code> だけになり、構文エラーになります。<br>回避策は2つあります。<br>1つは、JSON内で <code>\\$branch</code> と書いて、PowerShellに <code>$</code> を渡す方法です。<br>もう1つは、処理を <code>.ps1</code> ファイルに出して、フックからはそれを呼ぶ方法です。<br>行数が増えるものは後者が確実です。</p>
+            <p class="callout-title">$ を含むコマンドは args 形式で書く</p>
+            <p><code>command</code> に文字列を1本で書く形式では、その内容が既定でbashに渡されます（Windowsでも、Git Bashが入っていればbash経由になります）。<br>そのため <code>$branch</code> をそのまま書くと、bashが先に展開して空になり、PowerShellには届きません。<br><code>2&gt;$null</code> も <code>2&gt;</code> だけになり、構文エラーになります。<br>いっぽう <code>args</code> を指定した形式では、シェルを通さず実行ファイルが直接呼ばれます。<br>この場合は <code>$</code> やバッククォートもそのまま渡るため、エスケープを考えなくて済みます。</p>
           </div>
 
-          <p>1行で書く場合は、<code>$</code> を <code>\\$</code> にします。</p>
-
-          <pre><code>"command": "powershell.exe -NoProfile -Command \"[Console]::OutputEncoding = [System.Text.Encoding]::UTF8; \\$branch = (git branch --show-current 2&gt;\\$null); if (-not \\$branch) { \\$branch = 'no-git' }; @{hookSpecificOutput=@{hookEventName='UserPromptSubmit';additionalContext=('現在のブランチ: ' + \\$branch)}} | ConvertTo-Json -Compress\""</code></pre>
+          <pre><code>{
+  "type": "command",
+  "command": "powershell.exe",
+  "args": [
+    "-NoProfile",
+    "-Command",
+    "[Console]::OutputEncoding = [System.Text.Encoding]::UTF8; $branch = (git branch --show-current 2&gt;$null); if (-not $branch) { $branch = 'no-git' }; @{hookSpecificOutput=@{hookEventName='UserPromptSubmit';additionalContext=('現在のブランチ: ' + $branch)}} | ConvertTo-Json -Compress"
+  ],
+  "timeout": 5
+}</code></pre>
 
           <h3>複数の情報を1つのフックでまとめて渡す</h3>
 
           <p>フックを複数登録する代わりに、1つのフック内で複数の情報をまとめて <code>additionalContext</code> に入れる書き方が推奨です。<br>フックが多いと、セッション開始時や各メッセージごとに余分なプロセスが立ち上がるためです。</p>
 
-          <p>ここまで長くなると1行では書きにくいので、<code>.ps1</code> ファイルにします。</p>
+          <p>ここまで長くなると1行では書きにくいので、<code>.ps1</code> ファイルにします。<br>出力を渡す側なので、1行目のエンコーディング指定は <code>.ps1</code> の中にも必要です。</p>
 
           <p>ファイル: <code>C:\Users\&lt;ユーザー名&gt;\.claude\context.ps1</code></p>
 
-          <pre><code>$dt = Get-Date -Format 'yyyy-MM-dd HH:mm (dddd)'
+          <pre><code>[Console]::OutputEncoding = [System.Text.Encoding]::UTF8
+$dt = Get-Date -Format 'yyyy-MM-dd HH:mm (dddd)'
 $branch = (git branch --show-current 2&gt;$null)
 $ctx = "現在の日時: $dt`n現在のブランチ: $branch"
 @{hookSpecificOutput=@{hookEventName='UserPromptSubmit';additionalContext=$ctx}} | ConvertTo-Json -Compress</code></pre>
 
           <p>フック側は、このファイルを呼ぶだけにします。</p>
 
-          <pre><code>"command": "powershell.exe -NoProfile -File \"C:\\Users\\&lt;ユーザー名&gt;\\.claude\\context.ps1\""</code></pre>
+          <pre><code>{
+  "type": "command",
+  "command": "powershell.exe",
+  "args": ["-NoProfile", "-File", "C:\\Users\\&lt;ユーザー名&gt;\\.claude\\context.ps1"],
+  "timeout": 5
+}</code></pre>
 
           <div class="callout callout-warn">
             <p class="callout-title">日本語を含む .ps1 はUTF-8 BOM付きで保存する</p>
             <p>上の <code>.ps1</code> には日本語が入っています。<br>BOMなしのUTF-8で保存すると、Windows PowerShellが別の文字コードとして読み、文字化けや構文エラーになります。<br>エディタの保存形式を「UTF-8 with BOM」にしてください。</p>
+          </div>
+
+          <div class="callout callout-warn">
+            <p class="callout-title">.ps1 が実行ポリシーで拒否されることがある</p>
+            <p>PowerShellの実行ポリシーが <code>Restricted</code> や <code>AllSigned</code> の端末では、<code>.ps1</code> ファイルの実行が拒否されます。<br>動かない場合は <code>Get-ExecutionPolicy -List</code> で現在の設定を確認してください。<br>会社の管理端末では、ポリシーを自分で変更せずIT部門に相談してください。<br>その場合は <code>.ps1</code> を使わず、上のように <code>args</code> 形式で <code>-Command</code> に処理を直接渡す方法が使えます。</p>
           </div>
 
           <h3>他のフックイベント</h3>

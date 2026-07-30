@@ -93,8 +93,8 @@
             <pre><code>https://aoyama-webrider.github.io/ai-agent-tips/sound/
 ↑このページのとおり、私の settings.json に通知音の設定を反映して。
 ・既存の hooks 設定は壊さず、マージして（上書きしない）
-・終わったら、反映に再読み込み（/hooks を開き直す、または再起動）が必要か教えて</code></pre>
-            <p>この前提なら、ほぼそのまま再現できます。<br>ただし最後の再読み込み（<code>/hooks</code> を開き直す、または再起動）だけは手動です。<br>AIはClaude Code自体の再起動まではできません。</p>
+・終わったら、反映されたかの確認方法を教えて</code></pre>
+            <p>記事冒頭に書いた想定環境どおりであれば、ほぼそのまま再現できます。<br>フックは保存した時点で反映されるので、多くの場合これで鳴るようになります。<br>反映されないときの再起動だけは手動です（AIはClaude Code自体を再起動できません）。</p>
           </div>
 
           <div class="callout callout-warn">
@@ -156,7 +156,7 @@
               <h3 class="step-title">使えるWindows標準サウンドを選ぶ</h3>
             </div>
 
-            <p><code>C:\Windows\Media\</code> フォルダにOS標準のwavファイルが入っています。<br>エクスプローラーで開いてダブルクリックすると試聴できます。<br>よく使われるもの。</p>
+            <p><code>C:\Windows\Media\</code> フォルダにOS標準のwavファイルが入っています。<br>エクスプローラーで開いてダブルクリックすると試聴できます。<br>よく使われるものは次の5つです。</p>
 
             <div class="table-wrap">
               <table>
@@ -200,11 +200,9 @@
               <h3 class="step-title">設定を反映する</h3>
             </div>
 
-            <p>以下のいずれかでフックを読み込ませます。</p>
-            <ul>
-              <li>Claude Codeのチャット内で <code>/hooks</code> を一度開いて閉じる（設定が再読み込みされる）</li>
-              <li>Claude Codeを再起動する</li>
-            </ul>
+            <p>保存すれば、通常はそのまま反映されます。<br>Claude Codeが設定ファイルの変更を見ているためです。</p>
+
+            <p>入ったかどうかは、チャット内で <code>/hooks</code> を実行すると確認できます。<br>これは設定を一覧表示する読み取り専用の画面で、編集はできません。<br>反映されていない場合は、Claude Codeを再起動してください。</p>
           </div>
 
           <div class="step">
@@ -215,7 +213,7 @@
 
             <p>Claude Codeに簡単な質問を1つ投げてみてください。<br>返答が終わった瞬間に <code>Stop</code> の音（chimes）が鳴れば成功です。<br>次にコマンド実行を伴う依頼（例: 「いまのフォルダのファイル一覧を出して」）をすると、許可ダイアログが出るタイミングで <code>PermissionRequest</code> の音（notify）が鳴ります。</p>
 
-            <p>鳴らない場合は次の項目をチェック。</p>
+            <p>鳴らない場合は、次の項目を確認してください。</p>
             <ul>
               <li>settings.json のJSON構文が壊れていないか（カンマの抜け、バックスラッシュの数に注意）</li>
               <li>フックがロードされているか（<code>/hooks</code> で確認できる）</li>
@@ -251,13 +249,24 @@ $player.Open([uri]'C:\path\to\sound.mp3')
 $player.Play()
 Start-Sleep -Seconds 5</code></pre>
 
-          <pre><code>"command": "powershell.exe -NoProfile -File \"C:\\Users\\&lt;ユーザー名&gt;\\.claude\\play-sound.ps1\""</code></pre>
+          <p>フック側は、<code>args</code> を使う形式でこのファイルを呼びます。</p>
+
+          <pre><code>{
+  "type": "command",
+  "command": "powershell.exe",
+  "args": ["-NoProfile", "-File", "C:\\Users\\&lt;ユーザー名&gt;\\.claude\\play-sound.ps1"]
+}</code></pre>
 
           <p><code>Start-Sleep</code> の秒数は、音源の長さ以上にしてください。<br><code>Play()</code> は再生の完了を待たずに戻るため、この待ち時間が切れた時点で音も止まります。</p>
 
           <div class="callout callout-warn">
-            <p class="callout-title">フックのコマンドに $ を直接書かない</p>
-            <p>フックのコマンドは、既定でbashに渡されます（Windowsでも、Git Bashが入っていればbash経由になります）。<br>そのため <code>$player</code> のような変数をコマンド文字列に直接書くと、bashが先に展開して空になり、PowerShellには届きません。<br>上のように処理を <code>.ps1</code> ファイルへ出しておけば、この問題は起きません。<br>どうしても1行で書きたい場合は、JSON内で <code>\\$player</code> と書いて、PowerShellに <code>$</code> を渡してください。</p>
+            <p class="callout-title">$ を含むコマンドは args 形式で書く</p>
+            <p><code>command</code> に文字列を1本で書く形式では、その内容が既定でbashに渡されます（Windowsでも、Git Bashが入っていればbash経由になります）。<br>そのため <code>$player</code> のような変数をそのまま書くと、bashが先に展開して空になり、PowerShellには届きません。<br>いっぽう <code>args</code> を指定した形式では、シェルを通さず実行ファイルが直接呼ばれます。<br>この場合は <code>$</code> やバッククォートもそのまま渡るため、エスケープを考えなくて済みます。<br>変数を含むコマンドを書くときは、この形式を使ってください。</p>
+          </div>
+
+          <div class="callout callout-warn">
+            <p class="callout-title">.ps1 が実行ポリシーで拒否されることがある</p>
+            <p>PowerShellの実行ポリシーが <code>Restricted</code> や <code>AllSigned</code> の端末では、<code>.ps1</code> ファイルの実行が拒否されます。<br>動かない場合は <code>Get-ExecutionPolicy -List</code> で現在の設定を確認してください。<br>会社の管理端末では、ポリシーを自分で変更せずIT部門に相談してください。<br>その場合は <code>.ps1</code> を使わず、<code>args</code> 形式で <code>-Command</code> に処理を直接渡す方法が使えます。</p>
           </div>
 
           <h3>音量を調整したいとき</h3>
@@ -311,7 +320,7 @@ Start-Sleep -Seconds 5</code></pre>
           </div>
 
           <h3>例: 完了時にWindowsトースト通知を出す</h3>
-          <p>音の代わり（または併用）に、画面右下へポップアップを出すパターン。</p>
+          <p>音の代わり（または併用）に、画面右下へポップアップを出すパターンです。</p>
           <pre><code>"command": "powershell.exe -NoProfile -Command \"[Console]::OutputEncoding=[Text.Encoding]::UTF8; New-BurntToastNotification -Text 'Claude Code', '応答が完了しました'\""</code></pre>
           <div class="callout callout-warn">
             <p class="callout-title">事前準備が必要</p>

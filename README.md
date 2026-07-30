@@ -12,6 +12,8 @@ GitHub Pagesでホスティングしています：
 ```
 ai-agent-tips/
 ├── index.html        # Tips一覧のトップページ
+├── assets/
+│   └── style.css     # 全ページ共通のCSS（デザインの変更はここ1箇所）
 ├── timestamp/        # IDE内Claude Codeのチャットに日時を表示するTips
 │   └── index.html
 ├── sound/            # Claude Codeの完了・許可待ちを音で知らせるTips
@@ -28,7 +30,7 @@ ai-agent-tips/
 ## Tipsの追加方法
 
 1. ルート直下に新しいフォルダを作る（例: `git-branch/`）
-2. その中に `index.html` を置く（既存記事をコピーして中身を差し替えるのが早い）
+2. その中に `index.html` を置く（既存記事をコピーして中身を差し替えるのが早い）。CSSは書かず、`<link rel="stylesheet" href="../assets/style.css">` を読むだけにする
 3. ルートの `index.html` の `tips-grid` に新しいカードを追加（あわせて `tips published` の件数と `Last updated` も更新）
 4. コミット・プッシュ → GitHub Pagesが自動更新
 
@@ -43,7 +45,8 @@ ai-agent-tips/
 - `text-transform: uppercase` は使わない（コマンド名や ChatGPT の表記が崩れる）
 - `.article-content p` が詳細度で勝つので、段落に別のクラス（`.where` `.prompt` `.callout-title` など）を当てるときは `.article-content .xxx` と書く
 - アンカーのidは `<section>` に付ける。オフセットは `.article-content section { scroll-margin-top }` が持っている
-- 記事末尾は「関連するTips（内部リンク）」と「参考リンク（外部の一次情報）」の2節に分ける
+- 記事末尾に `id="related"` の「関連するTips」節を置き、内部リンクはすべてここに集める。外部の一次情報がある記事は、続けて `id="links"` の「参考リンク」節を置く
+- CSSは `assets/style.css` に書く。そのページにしか出てこないものだけ、HTML側の `<style>` に残す（現在はトップのカードと review-strategy のプロンプト枠）
 - 手順の場所ラベルは、コマンドを打つ手順は「実行場所」、GUIを操作する手順は「操作場所」
 
 ### 技術的な内容を書くときの注意

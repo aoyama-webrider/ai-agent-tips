@@ -4,11 +4,11 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Claude CodeからCodexを呼び出して、レビューと画像生成に使う — AI Agent Tips</title>
-  <meta name="description" content="OpenAI公式プラグイン codex-plugin-cc でClaude CodeからCodexを呼び出す手順と、別視点でのレビュー・gpt-image-2での画像生成の使い方。">
+  <meta name="description" content="OpenAI公式プラグイン codex-plugin-cc でClaude CodeからCodexを呼び出す手順と、別視点でのレビュー・画像生成の使い方。">
   <meta name="robots" content="noindex, nofollow">
   <meta property="og:type" content="article">
   <meta property="og:title" content="Claude CodeからCodexを呼び出して、レビューと画像生成に使う — AI Agent Tips">
-  <meta property="og:description" content="OpenAI公式プラグイン codex-plugin-cc でClaude CodeからCodexを呼び出す手順と、別視点でのレビュー・gpt-image-2での画像生成の使い方。">
+  <meta property="og:description" content="OpenAI公式プラグイン codex-plugin-cc でClaude CodeからCodexを呼び出す手順と、別視点でのレビュー・画像生成の使い方。">
   <meta property="og:url" content="https://aoyama-webrider.github.io/ai-agent-tips/codex/">
 
   <link rel="icon" type="image/png" href="../favicon.png">
@@ -50,7 +50,7 @@
         </div>
         <h1 class="article-title">Claude CodeからCodexを呼び出して、レビューと画像生成に使う</h1>
         <div class="article-meta">
-          <span class="article-meta-item">想定環境: Windows ＋ Claude Code（CLI）＋ Node.js 18.18以上 ＋ Claudeサブスク ＋ ChatGPTのアカウント（初回のみ管理者権限が必要）</span>
+          <span class="article-meta-item">想定環境: Windows ＋ Claude Code（CLI）＋ Node.js 18.18以上 ＋ Claudeサブスク ＋ ChatGPTのアカウント（推奨構成の初期設定に管理者権限が必要）</span>
         </div>
       </header>
 
@@ -100,7 +100,7 @@
 
             <pre><code>irm https://claude.ai/install.ps1 | iex</code></pre>
 
-            <p>これはWindows（PowerShell）用のインストールコマンドです。<br>Mac/Linuxの場合はインストール方法が異なるので、公式の手順を確認してください。</p>
+            <p>これはAnthropic公式のWindows（PowerShell）用インストールコマンドです。<br>取得したスクリプトをその場で実行する形なので、URLが公式ドキュメントに載っているものと一致しているかを確認してから実行してください。<br>会社の管理端末では、インストールの可否をIT部門に確認してください。<br>Mac/Linuxの場合はインストール方法が異なるので、公式の手順を確認してください。</p>
           </div>
 
           <div class="step">
@@ -203,7 +203,7 @@
 
             <div class="callout callout-warn">
               <p class="callout-title">会社の管理端末では先に確認する</p>
-              <p>この初期設定では、ローカルユーザーとグループの作成、ファイアウォールの設定などが行われます。<br>組織のポリシーで制限されていると失敗します。<br>管理端末で使う場合は、実行前にIT部門へ可否を確認してください。<br>確認が取れるまでは、権限昇格が不要な選択肢2で試すこともできます。</p>
+              <p>この初期設定では、ローカルユーザーとグループの作成、ファイアウォールの設定などが行われます。<br>組織のポリシーで制限されていると失敗します。<br>管理端末で使う場合は、実行前にIT部門へ可否を確認してください。<br>elevated側の設定だけが確認待ちなら、権限昇格が不要な選択肢2で進めることもできます。<br>ただし選択肢2は管理者権限を不要にするだけで、Codexを使ってよいかという組織の判断を代わりにするものではありません。</p>
             </div>
           </div>
         </section>
@@ -310,7 +310,7 @@
 
             <pre><code>file:///C:/Users/&lt;ユーザー名&gt;/.codex/generated_images/019dffc6-.../ig_xxxxx.png</code></pre>
 
-            <p>保存先を指定しなければ、Codexの作業フォルダに置かれたままになります。<br>依頼文に「プロジェクトの <code>public/images/</code> に保存して」のように書けば、Codexがそこへ移してくれます。<br>プロジェクトから参照する画像は、作業フォルダに置いたままにしないでください。</p>
+            <p>保存先を指定しなければ、Codex側の保存先フォルダ（<code>~/.codex/generated_images/</code>）に置かれたままになります。<br>依頼文に「プロジェクトの <code>public/images/</code> に保存して」のように書けば、Codexがそこへ移してくれます。<br>プロジェクトから参照する画像を、このフォルダに置いたままにしないでください。</p>
           </div>
 
           <div class="callout callout-warn">

@@ -42,6 +42,11 @@
       margin-bottom: 8px;
     }
 
+    /* 3列あるので、共通CSSの480pxより広い値で横スクロールに切り替える */
+    .table-wrap table {
+      min-width: 560px;
+    }
+
     .tier-weight {
       white-space: nowrap;
       font-weight: 600;
@@ -204,6 +209,11 @@
           <p>別のモデル、できれば別の会社のモデルに渡すと、前提を知らない読み手として読んでくれます。<br>「ここは説明が足りない」「この根拠はどこから来たのか」といった、内側からは出にくい指摘が返ってきます。</p>
 
           <div class="callout callout-warn">
+            <p class="callout-title">渡す前に、渡してよい内容か確認する</p>
+            <p>別のサービスに渡すということは、その内容を社外に送るということです。<br>個人情報、顧客名、未公開の情報、認証情報が含まれていないかを確認してください。<br>必要な部分だけを抜き出す、固有名詞を伏せる、といった加工をしてから渡します。<br>そもそもどのサービスに何を送ってよいかは、所属組織の判断に従ってください。</p>
+          </div>
+
+          <div class="callout callout-warn">
             <p class="callout-title">別会社なら安心、ではない</p>
             <p>別のモデルでも、学習しているデータや典型的な答え方は重なっています。<br>こちらが渡した前提が間違っていれば、同じ誤りに揃って乗ることもあります。<br>クロスレビューは見落としを見つける確率を上げる手段であって、一次情報との突き合わせの代わりにはなりません。<br>数字や固有名詞は、最後に人が出典で確認してください。</p>
           </div>
@@ -262,7 +272,7 @@ B（再レビュー）→ 新しい指摘なし → 終了</div>
           </ul>
         </section>
 
-        <section id="links">
+        <section id="related">
           <h2>関連するTips</h2>
 
           <ul class="link-list">
@@ -288,7 +298,7 @@ B（再レビュー）→ 新しい指摘なし → 終了</div>
         <li><a href="#cross-loop">モデル同士のループ（最激重タスク）</a></li>
         <li><a href="#cautions">注意点</a></li>
         <li><a href="#summary">まとめ</a></li>
-        <li><a href="#links">関連するTips</a></li>
+        <li><a href="#related">関連するTips</a></li>
       </ul>
     </nav>
   </div>

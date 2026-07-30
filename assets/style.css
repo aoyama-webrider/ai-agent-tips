@@ -204,10 +204,6 @@
       scroll-margin-top: 80px;
     }
 
-    .article-content h3[id] {
-      scroll-margin-top: 80px;
-    }
-
     .article-content p {
       margin-bottom: 18px;
       color: var(--text-primary);
@@ -220,11 +216,6 @@
 
     .article-content li {
       margin-bottom: 8px;
-      color: var(--text-primary);
-    }
-
-    .article-content strong {
-      font-weight: 700;
       color: var(--text-primary);
     }
 
@@ -451,7 +442,6 @@
       font-size: 0.75rem;
       font-weight: 700;
       letter-spacing: 0.1em;
-      text-transform: uppercase;
       color: var(--text-tertiary);
       margin-bottom: 14px;
     }
@@ -548,6 +538,7 @@
 
     @media (max-width: 640px) {
       .site-header-inner { padding: 0 20px; }
+      .site-nav a { margin-left: 16px; font-size: 0.85rem; }
       .step { padding: 20px 22px; }
       .article-content pre { padding: 16px 18px; font-size: 0.8rem; }
       .article-content h2 { font-size: 1.3rem; margin-top: 40px; }
