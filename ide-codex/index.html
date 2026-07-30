@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>VS CodeにCodexパネルを追加して、Claude Codeと並べて使う — AI Agent Tips</title>
   <meta name="description" content="OpenAI公式のCodex拡張機能をVS Codeに入れて、Claude Codeと並べて使う手順。画像生成や別視点のレビューをエディタから離れずに実行できる。">
+  <meta name="robots" content="noindex, nofollow">
 
   <link rel="icon" type="image/png" href="../favicon.png">
   <link rel="apple-touch-icon" href="../favicon.png">
@@ -86,7 +87,7 @@
       display: inline-block;
       width: 22px;
       height: 22px;
-      background: linear-gradient(135deg, #2563eb 0%, #8b5cf6 100%);
+      background: var(--accent);
       border-radius: 6px;
       position: relative;
     }
@@ -335,7 +336,7 @@
       justify-content: center;
       width: 32px;
       height: 32px;
-      background: linear-gradient(135deg, #2563eb 0%, #8b5cf6 100%);
+      background: var(--accent);
       color: white;
       border-radius: 50%;
       font-size: 0.85rem;

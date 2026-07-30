@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Claude Codeの「完了」「許可待ち」を音で知らせる — AI Agent Tips</title>
   <meta name="description" content="StopフックとPermissionRequestフックを使い、Claude Codeの応答完了や権限要求のタイミングで通知音を鳴らす設定方法。ながら作業の取りこぼしを防ぐ。">
+  <meta name="robots" content="noindex, nofollow">
 
   <link rel="icon" type="image/png" href="../favicon.png">
   <link rel="apple-touch-icon" href="../favicon.png">
@@ -86,7 +87,7 @@
       display: inline-block;
       width: 22px;
       height: 22px;
-      background: linear-gradient(135deg, #2563eb 0%, #8b5cf6 100%);
+      background: var(--accent);
       border-radius: 6px;
       position: relative;
     }
@@ -323,7 +324,7 @@
       justify-content: center;
       width: 32px;
       height: 32px;
-      background: linear-gradient(135deg, #2563eb 0%, #8b5cf6 100%);
+      background: var(--accent);
       color: white;
       border-radius: 50%;
       font-size: 0.85rem;
