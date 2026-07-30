@@ -1,0 +1,767 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>タスクの重さでAIのレビュー方法を使い分ける — AI Agent Tips</title>
+  <meta name="description" content="AIの初回出力は完成品ではない前提で、タスクの重さに応じて単発レビュー・ループレビュー・クロスレビューを使い分ける考え方と、そのままコピペできる頼み方。">
+
+  <link rel="icon" type="image/png" href="../favicon.png">
+  <link rel="apple-touch-icon" href="../favicon.png">
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+JP:wght@400;500;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+
+  <style>
+    :root {
+      --text-primary: #18181b;
+      --text-secondary: #52525b;
+      --text-tertiary: #a1a1aa;
+      --bg-base: #fafaf9;
+      --bg-elevated: #ffffff;
+      --bg-soft: #f4f4f5;
+      --bg-code: #1e1e2e;
+      --code-text: #cdd6f4;
+      --border-subtle: #e4e4e7;
+      --border-medium: #d4d4d8;
+      --accent: #2563eb;
+      --accent-soft: #dbeafe;
+      --accent-hover: #1d4ed8;
+      --warn: #d97706;
+      --tip: #059669;
+      --radius-sm: 6px;
+      --radius-md: 10px;
+      --radius-lg: 16px;
+      --shadow-sm: 0 1px 2px rgba(24, 24, 27, 0.04);
+      --shadow-md: 0 4px 12px rgba(24, 24, 27, 0.05);
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    html { font-size: 16px; scroll-behavior: smooth; }
+
+    body {
+      font-family: "Inter", "Noto Sans JP", -apple-system, "Hiragino Sans", "Yu Gothic Medium", "Yu Gothic", sans-serif;
+      color: var(--text-primary);
+      background: var(--bg-base);
+      line-height: 1.85;
+      letter-spacing: 0.005em;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+      font-feature-settings: "palt" 1;
+    }
+
+    .site-header {
+      border-bottom: 1px solid var(--border-subtle);
+      padding: 18px 0;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      background: rgba(255, 255, 255, 0.85);
+      backdrop-filter: blur(10px);
+    }
+
+    .site-header-inner {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 0 32px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .logo {
+      font-weight: 700;
+      font-size: 1.05rem;
+      letter-spacing: -0.01em;
+      color: var(--text-primary);
+      text-decoration: none;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .logo-mark {
+      display: inline-block;
+      width: 22px;
+      height: 22px;
+      background: linear-gradient(135deg, #2563eb 0%, #8b5cf6 100%);
+      border-radius: 6px;
+      position: relative;
+    }
+
+    .logo-mark::after {
+      content: "";
+      position: absolute;
+      inset: 5px;
+      background: white;
+      border-radius: 2px;
+    }
+
+    .site-nav a {
+      color: var(--text-secondary);
+      text-decoration: none;
+      font-size: 0.9rem;
+      font-weight: 500;
+      margin-left: 24px;
+      transition: color 0.15s ease;
+    }
+
+    .site-nav a:hover {
+      color: var(--text-primary);
+    }
+
+    .layout {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 56px 32px 96px;
+      display: grid;
+      grid-template-columns: 1fr 220px;
+      gap: 64px;
+      align-items: start;
+    }
+
+    .article {
+      min-width: 0;
+    }
+
+    .breadcrumb {
+      font-size: 0.85rem;
+      color: var(--text-tertiary);
+      margin-bottom: 24px;
+    }
+
+    .breadcrumb a {
+      color: var(--text-tertiary);
+      text-decoration: none;
+      transition: color 0.15s ease;
+    }
+
+    .breadcrumb a:hover {
+      color: var(--accent);
+    }
+
+    .breadcrumb-sep {
+      margin: 0 8px;
+      color: var(--border-medium);
+    }
+
+    .article-header {
+      margin-bottom: 48px;
+      padding-bottom: 32px;
+      border-bottom: 1px solid var(--border-subtle);
+    }
+
+    .article-tags {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+      margin-bottom: 20px;
+    }
+
+    .article-tag {
+      font-size: 0.72rem;
+      font-weight: 600;
+      letter-spacing: 0.04em;
+      background: var(--accent-soft);
+      color: var(--accent);
+      padding: 3px 10px;
+      border-radius: 4px;
+      text-transform: uppercase;
+    }
+
+    .article-title {
+      font-size: clamp(1.75rem, 4vw, 2.5rem);
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      line-height: 1.25;
+      color: var(--text-primary);
+      margin-bottom: 20px;
+    }
+
+    .article-meta {
+      display: flex;
+      gap: 24px;
+      flex-wrap: wrap;
+      font-size: 0.88rem;
+      color: var(--text-tertiary);
+    }
+
+    .article-meta-item {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .article-content h2 {
+      font-size: 1.5rem;
+      font-weight: 700;
+      letter-spacing: -0.015em;
+      margin: 56px 0 20px;
+      padding-top: 8px;
+      color: var(--text-primary);
+      scroll-margin-top: 80px;
+    }
+
+    .article-content h3 {
+      font-size: 1.15rem;
+      font-weight: 600;
+      margin: 36px 0 14px;
+      letter-spacing: -0.01em;
+      color: var(--text-primary);
+      scroll-margin-top: 80px;
+    }
+
+    .article-content p {
+      margin-bottom: 18px;
+      color: var(--text-primary);
+    }
+
+    .article-content ul, .article-content ol {
+      margin: 0 0 20px;
+      padding-left: 1.5em;
+    }
+
+    .article-content li {
+      margin-bottom: 8px;
+      color: var(--text-primary);
+    }
+
+    .article-content strong {
+      font-weight: 700;
+      color: var(--text-primary);
+    }
+
+    .article-content code {
+      font-family: "JetBrains Mono", "SFMono-Regular", Consolas, monospace;
+      font-size: 0.88em;
+      background: var(--bg-soft);
+      color: var(--text-primary);
+      padding: 2px 7px;
+      border-radius: 4px;
+      border: 1px solid var(--border-subtle);
+    }
+
+    .article-content pre {
+      background: var(--bg-code);
+      color: var(--code-text);
+      border-radius: var(--radius-md);
+      padding: 20px 24px;
+      overflow-x: auto;
+      margin: 20px 0 24px;
+      font-size: 0.86rem;
+      line-height: 1.7;
+      box-shadow: var(--shadow-md);
+      position: relative;
+    }
+
+    .article-content pre code {
+      background: none;
+      color: inherit;
+      padding: 0;
+      font-size: inherit;
+      border: none;
+      font-family: "JetBrains Mono", "SFMono-Regular", Consolas, monospace;
+    }
+
+    /* コピペして使うプロンプト例。コードではないので等幅にしない */
+    .prompt {
+      background: var(--bg-elevated);
+      border: 1px solid var(--border-subtle);
+      border-left: 3px solid var(--accent);
+      border-radius: var(--radius-md);
+      padding: 18px 22px;
+      margin: 20px 0 24px;
+      white-space: pre-wrap;
+      font-size: 0.95rem;
+      line-height: 1.8;
+      box-shadow: var(--shadow-sm);
+    }
+
+    .prompt-label {
+      display: block;
+      font-size: 0.78rem;
+      font-weight: 700;
+      color: var(--accent);
+      margin-bottom: 8px;
+    }
+
+    .callout {
+      background: var(--bg-elevated);
+      border: 1px solid var(--border-subtle);
+      border-left: 3px solid var(--accent);
+      border-radius: var(--radius-md);
+      padding: 18px 22px;
+      margin: 24px 0;
+      box-shadow: var(--shadow-sm);
+    }
+
+    /* 種類の違いは左ボーダーと見出しの色だけで示す（背景に色やグラデーションは敷かない） */
+    .callout-warn {
+      border-left-color: var(--warn);
+    }
+
+    .callout-tip {
+      border-left-color: var(--tip);
+    }
+
+    /* 固有名詞の表記が崩れるため大文字変換はしない */
+    .callout-title {
+      font-weight: 700;
+      font-size: 0.9rem;
+      letter-spacing: 0.01em;
+      margin: 0 0 8px;
+      color: var(--accent);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .callout-warn .callout-title { color: var(--warn); }
+    .callout-tip .callout-title { color: var(--tip); }
+
+    .callout p:last-child { margin-bottom: 0; }
+
+    .diagram {
+      background: var(--bg-elevated);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-md);
+      padding: 24px 28px;
+      font-family: "JetBrains Mono", monospace;
+      font-size: 0.82rem;
+      line-height: 1.7;
+      white-space: pre;
+      overflow-x: auto;
+      margin: 24px 0;
+      color: var(--text-secondary);
+      box-shadow: var(--shadow-sm);
+    }
+
+    /* 画面が狭いときは表だけを横スクロールさせ、ページ全体は横に伸ばさない */
+    .table-wrap {
+      overflow-x: auto;
+      margin: 20px 0 28px;
+      border-radius: var(--radius-md);
+      box-shadow: var(--shadow-sm);
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 20px 0 28px;
+      font-size: 0.92rem;
+      background: var(--bg-elevated);
+      border-radius: var(--radius-md);
+      overflow: hidden;
+      box-shadow: var(--shadow-sm);
+    }
+
+    .table-wrap table {
+      margin: 0;
+      box-shadow: none;
+      border-radius: 0;
+      /* これ以下には縮めず、狭い画面では横スクロールに切り替える（説明列が潰れるのを防ぐ） */
+      min-width: 560px;
+    }
+
+    th, td {
+      padding: 12px 16px;
+      text-align: left;
+      border-bottom: 1px solid var(--border-subtle);
+      vertical-align: top;
+    }
+
+    th {
+      background: var(--bg-soft);
+      font-weight: 600;
+      font-size: 0.85rem;
+      color: var(--text-secondary);
+      letter-spacing: 0.02em;
+    }
+
+    .tier-weight {
+      white-space: nowrap;
+      font-weight: 600;
+    }
+
+    tr:last-child td {
+      border-bottom: none;
+    }
+
+    .link-list {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+    }
+
+    .link-list li {
+      margin-bottom: 10px;
+    }
+
+    .link-list a {
+      color: var(--accent);
+      text-decoration: none;
+      font-weight: 500;
+    }
+
+    .link-list a:hover {
+      text-decoration: underline;
+    }
+
+    .link-list span {
+      color: var(--text-tertiary);
+      font-size: 0.88rem;
+    }
+
+    .toc-sidebar {
+      position: sticky;
+      top: 100px;
+      align-self: start;
+    }
+
+    .toc-title {
+      font-size: 0.75rem;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--text-tertiary);
+      margin-bottom: 14px;
+    }
+
+    .toc-list {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+    }
+
+    .toc-list li {
+      margin-bottom: 4px;
+    }
+
+    .toc-list a {
+      display: block;
+      color: var(--text-secondary);
+      text-decoration: none;
+      font-size: 0.875rem;
+      padding: 6px 0 6px 12px;
+      border-left: 2px solid var(--border-subtle);
+      transition: all 0.15s ease;
+      line-height: 1.5;
+    }
+
+    .toc-list a:hover {
+      color: var(--accent);
+      border-left-color: var(--accent);
+    }
+
+    .article-footer {
+      margin-top: 80px;
+      padding-top: 32px;
+      border-top: 1px solid var(--border-subtle);
+    }
+
+    .back-link {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      color: var(--accent);
+      text-decoration: none;
+      font-weight: 600;
+      font-size: 0.95rem;
+      padding: 10px 16px;
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-md);
+      background: var(--bg-elevated);
+      transition: all 0.15s ease;
+    }
+
+    .back-link:hover {
+      background: var(--accent-soft);
+      border-color: var(--accent);
+    }
+
+    .site-footer {
+      border-top: 1px solid var(--border-subtle);
+      padding: 40px 32px;
+      text-align: center;
+      color: var(--text-tertiary);
+      font-size: 0.85rem;
+      background: var(--bg-elevated);
+    }
+
+    .site-footer a {
+      color: var(--accent);
+      text-decoration: none;
+    }
+
+    @media (max-width: 960px) {
+      .layout {
+        grid-template-columns: 1fr;
+        gap: 0;
+        padding: 40px 24px 64px;
+      }
+      .toc-sidebar {
+        position: static;
+        order: -1;
+        padding: 18px 20px;
+        background: var(--bg-elevated);
+        border: 1px solid var(--border-subtle);
+        border-radius: var(--radius-md);
+        margin-bottom: 32px;
+      }
+      .toc-list a {
+        font-size: 0.85rem;
+      }
+    }
+
+    @media (max-width: 640px) {
+      .site-header-inner { padding: 0 20px; }
+      .article-content pre { padding: 16px 18px; font-size: 0.8rem; }
+      .prompt { padding: 16px 18px; font-size: 0.9rem; }
+      .article-content h2 { font-size: 1.3rem; margin-top: 40px; }
+      .article-content h3 { font-size: 1.05rem; }
+    }
+  </style>
+</head>
+<body>
+  <header class="site-header">
+    <div class="site-header-inner">
+      <a href="../" class="logo">
+        <span class="logo-mark"></span>
+        AI Agent Tips
+      </a>
+      <nav class="site-nav">
+        <a href="https://github.com/aoyama-webrider/ai-agent-tips" target="_blank" rel="noopener">GitHub</a>
+      </nav>
+    </div>
+  </header>
+
+  <div class="layout">
+    <article class="article">
+      <p class="breadcrumb">
+        <a href="../">Tips一覧</a>
+        <span class="breadcrumb-sep">/</span>
+        <span>レビューの使い分け</span>
+      </p>
+
+      <header class="article-header">
+        <div class="article-tags">
+          <span class="article-tag">レビュー</span>
+          <span class="article-tag">ループレビュー</span>
+          <span class="article-tag">クロスレビュー</span>
+          <span class="article-tag">プロンプト</span>
+        </div>
+        <h1 class="article-title">タスクの重さでAIのレビュー方法を使い分ける</h1>
+        <div class="article-meta">
+          <span class="article-meta-item">対象: AIエージェントに文章やコードを作らせている人</span>
+        </div>
+      </header>
+
+      <div class="article-content">
+        <section id="premise">
+          <h2>1回目の出力は完成品ではない</h2>
+
+          <p>モデルの進化で、事実をでっち上げるような明確な誤り（ハルシネーション）は確実に減りました。<br>体感としても、以前ほど「もっともらしい嘘」に警戒しなくてよくなっています。</p>
+
+          <p>ただし、見落としや抜け漏れは今も普通に起こります。<br>最新世代のモデルを使っても、推論の強さを上げても、1回の出力で完璧に仕上がることはほぼありません。<br>指示のうち1項目だけ反映されていない、前提条件が1つ抜けている、といった漏れが残ります。</p>
+
+          <p>そこで有効なのが、初回出力のあとにレビューを挟むことです。<br>ポイントは、すべてのタスクに同じレビューをかけないことです。<br>タスクの重さに応じて、レビューの厚みを変えます。</p>
+
+          <div class="callout callout-tip">
+            <p class="callout-title">ねらいは人の手間を減らすこと</p>
+            <p>レビューを挟む目的は、人のチェックをなくすことではありません。<br>AI自身で到達できるところまで完成度を上げてもらい、人は最終調整だけを担う形にすることです。<br>粗い状態のものを人が直すより、そのほうが結果的に速く終わります。</p>
+          </div>
+        </section>
+
+        <section id="tiers">
+          <h2>重さ別の5段階</h2>
+
+          <p>私が目安にしている使い分けです。<br>上から順に、レビューの手間と消費する利用量が増えます。</p>
+
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>タスクの重さ</th>
+                  <th>レビュー方針</th>
+                  <th>目安</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td class="tier-weight">軽</td>
+                  <td>レビューしない</td>
+                  <td>誤字修正、1行の文言変更。間違っていてもすぐ気づいて直せるもの</td>
+                </tr>
+                <tr>
+                  <td class="tier-weight">中</td>
+                  <td>同じモデルで単発レビュー</td>
+                  <td>数百字の文章、1ファイル内の修正。社内で閉じるもの</td>
+                </tr>
+                <tr>
+                  <td class="tier-weight">重</td>
+                  <td>同じモデルでループレビュー</td>
+                  <td>記事1本、複数ファイルにまたがる実装。作り直すと時間がかかるもの</td>
+                </tr>
+                <tr>
+                  <td class="tier-weight">激重</td>
+                  <td>別のモデルでクロスレビュー</td>
+                  <td>社外に出す資料、料金や個人情報にかかわる箇所</td>
+                </tr>
+                <tr>
+                  <td class="tier-weight">最激重</td>
+                  <td>別のモデル同士でループのクロスレビュー</td>
+                  <td>契約・法務・料金表など、公開後の訂正が効かないもの</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <h3>重さの決め方</h3>
+
+          <p>判断基準は、出力の長さではありません。<br>間違ったまま先に進んだときの損害で決めます。</p>
+
+          <ul>
+            <li>社外に出るか、社内で閉じるか</li>
+            <li>間違いに気づける人が、自分より下流にいるか</li>
+            <li>公開後に直せるか、直せないか</li>
+            <li>やり直しに何分かかるか</li>
+          </ul>
+
+          <p>短い文章でも、料金表の数字ならレビューは厚くします。<br>長い下書きでも、自分しか読まないメモなら省きます。</p>
+        </section>
+
+        <section id="single">
+          <h2>単発レビュー（中タスク）</h2>
+
+          <p>作らせたあとに、同じモデルへ一度だけ読み直させます。<br>コツは、作った本人としてではなく、レビュアーの立場に切り替えさせることです。</p>
+
+          <p class="prompt"><span class="prompt-label">プロンプト例</span>いま作ったものを、書いた本人ではなくレビュアーの立場で読み直して。
+次の観点で指摘して。
+・事実の誤り、根拠のない断定
+・指示したのに反映されていない箇所
+・抜けている観点
+・読み手にとってわかりにくい箇所
+指摘は重要度の高い順に並べ、直すべきかどうかの判断も添えて。</p>
+
+          <p>「レビューして」だけだと、肯定的な感想が返ってきて終わることがあります。<br>観点を具体的に並べ、立場を切り替えるよう明示するのが効きます。</p>
+        </section>
+
+        <section id="loop">
+          <h2>ループレビュー（重タスク）</h2>
+
+          <p>レビューと修正を、新しい指摘が出なくなるまで繰り返させます。<br>1周目では見えなかった問題が、直したあとに見えてくることがあるためです。</p>
+
+          <p class="prompt"><span class="prompt-label">プロンプト例</span>以下を、新しい指摘が出なくなるまで繰り返して。
+1. レビュー（観点: 事実誤り／指示の反映漏れ／抜け／わかりにくさ）
+2. 指摘の修正
+3. その周で何を直したかを1行で報告
+終了条件は、新しい指摘が出ないこと。または5周に達したら終了。
+言い換えレベルの些細な修正は指摘に含めないで。</p>
+
+          <div class="callout callout-warn">
+            <p class="callout-title">終了条件を先に決める</p>
+            <p>「改善の余地がなくなるまで」だけを伝えると、些細な言い換えを延々と続けることがあります。<br>周回数の上限と、何を指摘に含めないかを最初に指定してください。<br>止め方を決めないループは、時間も利用量も想定外に使います。</p>
+          </div>
+
+          <p>各周で何を直したかを報告させるのも重要です。<br>あとで人が見るときに、どこが変わったのかを追えるようになります。</p>
+        </section>
+
+        <section id="cross">
+          <h2>クロスレビュー（激重タスク）</h2>
+
+          <p>作ったモデルとは別のモデルに読ませます。<br>同じモデルの自己レビューは、作ったときの前提をそのまま共有しているため、同じ見落としを繰り返しやすいからです。</p>
+
+          <p>別のモデル、できれば別の会社のモデルに渡すと、前提を知らない読み手として読んでくれます。<br>「ここは説明が足りない」「この根拠はどこから来たのか」といった、内側からは出にくい指摘が返ってきます。</p>
+
+          <p class="prompt"><span class="prompt-label">プロンプト例（渡す側に添える）</span>これは別のAIが作ったものです。
+前提を知らない読み手として、事実の誤りと説明の抜けを指摘してください。
+良い点の列挙は不要です。
+判断に迷った箇所は、迷った理由も書いてください。</p>
+
+          <p>手作業でも、別のツールに貼り付けるだけで成立します。<br>Claude Codeを使っているなら、Codexのプラグインを入れておくと、その場で別モデルに渡せます。<br>やり方は <a href="../codex/">Claude CodeからCodexを呼び出す</a> にまとめています。</p>
+        </section>
+
+        <section id="cross-loop">
+          <h2>モデル同士のループ（最激重タスク）</h2>
+
+          <p>クロスレビューとループを組み合わせます。<br>作る側と見る側を固定して、指摘が出なくなるまで往復させます。</p>
+
+          <div class="diagram">A（作成）
+   ↓ 成果物を渡す
+B（レビュー）指摘を返す
+   ↓
+A（修正）
+   ↓ 修正版を渡す
+B（再レビュー）→ 新しい指摘なし → 終了</div>
+
+          <p>手間は大きいので、対象は本当に取り返しがつかないものに限ります。<br>ここでも上限を決めておくのが前提です。<br>指摘が出続ける場合は、そもそもの指示や前提条件が曖昧であることが多く、ループを足しても収束しません。</p>
+        </section>
+
+        <section id="cautions">
+          <h2>注意点</h2>
+
+          <h3>レビューは無料ではない</h3>
+
+          <p>ループもクロスも、そのぶん利用量と時間を使います。<br>軽いタスクにまで厚いレビューを入れると、作業全体が遅くなります。<br>重さの判定を先にやるのは、この無駄を避けるためです。</p>
+
+          <p>自動でレビューを走らせる仕組みもありますが、往復が止まらなくなることがあります。<br>常時オンにせず、見ていられるときだけ有効にするのが安全です。</p>
+
+          <h3>「問題ありません」を信じすぎない</h3>
+
+          <p>AI自身の合格判定は、必ずしも正しくありません。<br>終了条件を「AIがOKと言ったら」だけにせず、周回数の上限も併記してください。<br>指摘が0件で返ってきたときは、観点の指定が抽象的すぎることもあります。</p>
+
+          <h3>事実確認と公開判断は人がやる</h3>
+
+          <p>ループやクロスで上げられるのは、内部の整合性と網羅性です。<br>一次情報との突き合わせや、外に出してよいかの判断は人の仕事として残ります。<br>AIに任せるのは、そこへ至るまでの磨き込みまでです。</p>
+        </section>
+
+        <section id="summary">
+          <h2>まとめ</h2>
+
+          <ul>
+            <li>初回出力は下書きとして扱う。抜け漏れは前提として起こる</li>
+            <li>レビューの厚みは、間違ったときの損害で決める</li>
+            <li>同じモデルの自己レビューには限界がある。重要なものは別のモデルに読ませる</li>
+            <li>ループには必ず終了条件（周回数の上限）を付ける</li>
+            <li>人が見る前の完成度を上げるのが目的で、人のチェックをなくすことではない</li>
+          </ul>
+        </section>
+
+        <section id="links">
+          <h2>関連するTips</h2>
+
+          <ul class="link-list">
+            <li><a href="../codex/">Claude CodeからCodexを呼び出して、レビューと画像生成に使う</a><br><span>クロスレビューの実行環境。Claude Codeの作業中に別モデルへ渡せます</span></li>
+            <li><a href="../ide-codex/">VS CodeにCodexパネルを追加して、Claude Codeと並べて使う</a><br><span>パネルを並べて、手で貼り付けながらクロスレビューする形にもできます</span></li>
+          </ul>
+        </section>
+      </div>
+
+      <footer class="article-footer">
+        <a href="../" class="back-link">← Tips一覧に戻る</a>
+      </footer>
+    </article>
+
+    <aside class="toc-sidebar">
+      <p class="toc-title">この記事の内容</p>
+      <ul class="toc-list">
+        <li><a href="#premise">1回目の出力は完成品ではない</a></li>
+        <li><a href="#tiers">重さ別の5段階</a></li>
+        <li><a href="#single">単発レビュー（中タスク）</a></li>
+        <li><a href="#loop">ループレビュー（重タスク）</a></li>
+        <li><a href="#cross">クロスレビュー（激重タスク）</a></li>
+        <li><a href="#cross-loop">モデル同士のループ（最激重タスク）</a></li>
+        <li><a href="#cautions">注意点</a></li>
+        <li><a href="#summary">まとめ</a></li>
+        <li><a href="#links">関連するTips</a></li>
+      </ul>
+    </aside>
+  </div>
+
+  <footer class="site-footer">
+    <p>このサイトのソースは <a href="https://github.com/aoyama-webrider/ai-agent-tips" target="_blank" rel="noopener">GitHub</a> で管理しています。</p>
+  </footer>
+</body>
+</html>

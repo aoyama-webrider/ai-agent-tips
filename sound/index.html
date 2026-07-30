@@ -584,6 +584,11 @@
 
             <p>ファイル: <code>C:\Users\&lt;ユーザー名&gt;\.claude\settings.json</code></p>
 
+            <div class="callout callout-tip">
+              <p class="callout-title">この場所に書くと全セッションで鳴る</p>
+              <p>上のファイルはユーザー単位（グローバル）の設定です。<br>ここに書いたフックは、どのフォルダで開いたセッションでも読み込まれます。<br>プロジェクトの中の <code>.claude/settings.json</code> に書くと、そのプロジェクトを開いたときだけ鳴る設定になります。<br>常に鳴らしたいなら、ユーザー単位のほうに書いてください。</p>
+            </div>
+
             <p><code>hooks</code> オブジェクトの中に、以下の <code>Stop</code> と <code>PermissionRequest</code> のブロックを追加します。<br><strong>すでに <code>hooks</code> がある場合は中身を消さずにマージ</strong>してください（例: <a href="../timestamp/">日時表示</a> の <code>UserPromptSubmit</code> など他のフックがあるときは、それらを残したまま <code>Stop</code> / <code>PermissionRequest</code> を足す）。</p>
 
             <pre><code>{

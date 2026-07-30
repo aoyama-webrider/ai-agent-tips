@@ -18,6 +18,10 @@ ai-agent-tips/
 │   └── index.html
 ├── codex/            # Claude CodeからCodexを呼び出して使うTips
 │   └── index.html
+├── ide-codex/        # VS CodeにCodexパネルを追加するTips
+│   └── index.html
+├── review-strategy/  # タスクの重さでAIのレビュー方法を使い分けるTips
+│   └── index.html
 └── README.md
 ```
 
