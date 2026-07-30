@@ -29,9 +29,7 @@
       --accent-soft: #dbeafe;
       --accent-hover: #1d4ed8;
       --warn: #d97706;
-      --warn-soft: #fef3c7;
       --tip: #059669;
-      --tip-soft: #d1fae5;
       --radius-sm: 6px;
       --radius-md: 10px;
       --radius-lg: 16px;
@@ -277,14 +275,13 @@
       box-shadow: var(--shadow-sm);
     }
 
+    /* 種類の違いは左ボーダーと見出しの色だけで示す（背景に色やグラデーションは敷かない） */
     .callout-warn {
       border-left-color: var(--warn);
-      background: linear-gradient(to right, var(--warn-soft), var(--bg-elevated));
     }
 
     .callout-tip {
       border-left-color: var(--tip);
-      background: linear-gradient(to right, var(--tip-soft), var(--bg-elevated));
     }
 
     .callout-title {

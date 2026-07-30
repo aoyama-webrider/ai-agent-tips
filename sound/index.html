@@ -29,9 +29,7 @@
       --accent-soft: #dbeafe;
       --accent-hover: #1d4ed8;
       --warn: #d97706;
-      --warn-soft: #fef3c7;
       --tip: #059669;
-      --tip-soft: #d1fae5;
       --radius-sm: 6px;
       --radius-md: 10px;
       --radius-lg: 16px;
@@ -277,14 +275,13 @@
       box-shadow: var(--shadow-sm);
     }
 
+    /* 種類の違いは左ボーダーと見出しの色だけで示す（背景に色やグラデーションは敷かない） */
     .callout-warn {
       border-left-color: var(--warn);
-      background: linear-gradient(to right, var(--warn-soft), var(--bg-elevated));
     }
 
     .callout-tip {
       border-left-color: var(--tip);
-      background: linear-gradient(to right, var(--tip-soft), var(--bg-elevated));
     }
 
     .callout-title {
@@ -530,7 +527,7 @@
         </div>
         <h1 class="article-title">Claude Codeの「完了」「許可待ち」を音で知らせる</h1>
         <div class="article-meta">
-          <span class="article-meta-item">想定環境: Windows ＋ Claude Code拡張（VS Code等）＋ Claudeサブスク</span>
+          <span class="article-meta-item">想定環境: Windows ＋ Claude Code（IDE拡張・CLIどちらでも）＋ Claudeサブスク</span>
         </div>
       </header>
 
@@ -574,7 +571,7 @@
 ↑このページのとおり、私の settings.json に通知音の設定を反映して。
 ・既存の hooks 設定は壊さず、マージして（上書きしない）
 ・終わったら、反映に再読み込み（/hooks を開き直す or 再起動）が必要か教えて</code></pre>
-            <p><strong>想定環境</strong>: Windows ＋ VS Codeなどのエディタ ＋ Claude Code拡張 ＋ Claudeサブスク。<br>この前提なら、ほぼそのまま再現できます。<br>ただし<strong>最後の再読み込み（<code>/hooks</code> を開き直す or 再起動）だけは手動</strong>です（AIはエディタの再起動まではできません）。</p>
+            <p><strong>想定環境</strong>: Windows ＋ Claude Code（IDE拡張・CLIどちらでも）＋ Claudeサブスク。<br>この前提なら、ほぼそのまま再現できます。<br>ただし<strong>最後の再読み込み（<code>/hooks</code> を開き直す or 再起動）だけは手動</strong>です（AIはClaude Code自体の再起動まではできません）。</p>
           </div>
 
           <p>仕組みを理解しながら自分で設定したい人向けに、手順も載せておきます（所要時間 約5分・Windows/PowerShell前提）。<br>Mac/Linuxの場合は <a href="#faq">注意点セクション</a> を参照してください。</p>
