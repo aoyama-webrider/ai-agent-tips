@@ -6,3 +6,6 @@ Thumbs.db
 .idea/
 node_modules/
 .screenshots/
+
+# 凍結（2026-07-30）: 記事化済みで使わなくなった下書き。ファイルは手元に残すがコミット・公開はしない
+sound/setup-notification-sound.md
