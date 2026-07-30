@@ -28,13 +28,38 @@ ai-agent-tips/
 ## Tipsの追加方法
 
 1. ルート直下に新しいフォルダを作る（例: `git-branch/`）
-2. その中に `index.html` を置く
+2. その中に `index.html` を置く（既存記事をコピーして中身を差し替えるのが早い）
 3. ルートの `index.html` の `tips-grid` に新しいカードを追加（あわせて `tips published` の件数と `Last updated` も更新）
 4. コミット・プッシュ → GitHub Pagesが自動更新
+
+### 記事を書くときの約束
+
+- 本文の段落は句点改行（1文1行）にする。`<br>` を句点の後ろに入れる。箇条書き・表・コードブロックはそのまま
+- `<head>` に `<meta name="robots" content="noindex, nofollow">` を入れる
+- 想定環境は「OS/エディタ ＋ 使うツール ＋ 必要なアカウント」の順で書く
+- 表は `<div class="table-wrap">` で包む（狭い画面で表だけ横スクロールさせ、説明列が潰れるのを防ぐ）
+- コールアウトの背景に色やグラデーションは敷かない。種類は左ボーダーと見出しの色だけで示す
+- `.callout-title` に `text-transform: uppercase` は付けない（コマンド名や ChatGPT の表記が崩れる）
 
 ## ローカルでの確認
 
 `index.html` をブラウザで直接開けばOK。サーバ不要。
+
+## 書く予定のネタ（サイトには出さない）
+
+以前はトップページに「ストック中」として出していたが、書く前のものを公開しても読者の役に立たないため、ここで管理する。
+
+- Gitブランチの自動通知（`UserPromptSubmit` フックでブランチ名を注入する応用）
+- カスタムスキルの設計（`.claude/skills/` で自分用のワークフローを作る）
+- MCP活用パターン（外部サービスとの接続をどこまで許すか）
+- 許可プロンプトを減らす設定（`permissions.allow` の設計方針）
+- グローバル `CLAUDE.md` とプロジェクト `CLAUDE.md` の書き分け
+
+## 検索エンジン対策
+
+全ページの `<head>` に `<meta name="robots" content="noindex, nofollow">` を入れている。
+
+`robots.txt` は置いていない。このサイトは `aoyama-webrider.github.io/ai-agent-tips/` というサブディレクトリ配置のため、置いても `/ai-agent-tips/robots.txt` になり、ドメイン直下しか読まないクローラーには無視される。記事を追加するときも、メタタグの記述を忘れないこと。
 
 ## 対象読者
 
